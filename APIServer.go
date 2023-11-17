@@ -7,20 +7,18 @@ import (
 	"net/http"
 
 	"Go_APIServer/db"
-
-	"golang.org/x/vuln/client"
 )
 
-// レスポンス用のJSONデータを格納する構造体
+// 注文処理後のレスポンス用
 type ResponseBody struct {
-	Status int   `json:"status"`
-	Order  Order `json:"order_info"`
+	Status    int   `json:"status"`
+	OrderInfo Order `json:"order_info"`
 }
 
-// 管理処理後のレスポンス用
+// 編集処理後のレスポンス用
 type EditResponse struct {
-	Status int       `json:"status"`
-	Info   *EditInfo `json:"manage"`
+	Status   int       `json:"status"`
+	EditInfo *EditInfo `json:"edit_info"`
 }
 
 func APIServer() error {
@@ -58,8 +56,8 @@ func APIServer() error {
 
 			// レスポンスの作成
 			res := ResponseBody{
-				Status: order_stat,
-				Order:  order,
+				Status:    order_stat,
+				OrderInfo: order,
 			}
 
 			// レスポンスをJSON形式で返す
@@ -253,9 +251,10 @@ func APIServer() error {
 		}
 	})
 
-	// 管理用 -----------------------------------------------------------------------------------
-	http.HandleFunc("/manage_post", func(w http.ResponseWriter, r *http.Request) {
-		var info *TableEditInfo
+	// テーブル編集 -----------------------------------------------------------------------------------
+	http.HandleFunc("/edit", func(w http.ResponseWriter, r *http.Request) {
+		var info EditInfo
+		res := EditResponse{EditInfo: &info}
 		mpost_cnt++
 
 		fmt.Printf("### Manage Post No.%d ###\n", mpost_cnt)
@@ -267,60 +266,107 @@ func APIServer() error {
 			return
 		}
 
-		res := info.TableEdit()
+		// 更新時刻を取得
+		info.Time = GetTime()
 
-		// mapを一度jsonに戻す
-		// post_json, err := json.Marshal(manage.Info)
-		// if err != nil {
-		// 	fmt.Println("Infoエンコードエラー :", err)
-		// 	res.Status = 30
-		// 	return
-		// }
+		fmt.Println("info :", info)
 
-		// レスポンスをJSON形式で返す
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK) // 200 OK
-		if err := json.NewEncoder(w).Encode(res); err != nil {
-			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-			fmt.Println("レスポンスの作成エラー :", err)
+		// DBクライアントの作成
+		client := db.NewClient()
+		if err := client.Prisma.Connect(); err != nil {
+			fmt.Println("クライアント接続エラー :", err)
+			res.Status = 30
+			return
 		}
+		defer func() {
+			// クライアントの切断
+			if err := client.Prisma.Disconnect(); err != nil {
+				panic(err)
+			}
 
-		// ステータスメッセージの表示（サーバ側）
-		switch res.Status {
-		case 10:
-			fmt.Println("正常終了")
-		case 20:
-			fmt.Println("在庫不足")
-		case 30:
-		default:
-			fmt.Println("未解決エラー")
-		}
+			// レスポンスをJSON形式で返す
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK) // 200 OK
 
-		fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
+			if err := json.NewEncoder(w).Encode(res); err != nil {
+				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+				fmt.Println("レスポンスの作成エラー :", err)
+				res.Status = 30
+			}
 
-		// テーブルごとに処理を分岐
-		if manage.Table == "stock" {
-			stock.Manage(client)
+			// ステータスメッセージの表示（サーバ側）
+			switch res.Status {
+			case 10:
+				fmt.Println("正常終了")
+			case 20:
+				fmt.Println("在庫不足")
+			case 30:
+			default:
+				fmt.Println("未解決エラー")
+			}
 
-		} else {
-			fmt.Println("エラー : テーブルが見つかりません")
+			fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
+		}()
+
+		// mapを各テーブル用の構造体に変換するため、一度jsonに変換
+		info_json, err := json.Marshal(info.Info)
+		if err != nil {
+			fmt.Println("infoエンコードエラー :", err)
 			res.Status = 30
 			return
 		}
 
-		// 処理が正常終了したらManageテーブルに登録
-		_, err := client.Manage.CreateOne(
+		// 各テーブルごとに処理を分岐
+		if info.Table == "stock" {
+			var stock Stock
 
-			manage,
-		).Exec(ctx)
-		if err != nil {
-			fmt.Println("ManageテーブルInsertエラー :", err)
+			// 変換したjsonをStockに変換
+			if err := json.Unmarshal(info_json, &stock); err != nil {
+				fmt.Println("infoデコードエラー :", err)
+				res.Status = 30
+				return
+			}
+
+			fmt.Println("stock :", stock)
+
+			// 編集タイプごとに処理を分岐
+			// Type 1:Update, 2:Insert, 3:Delete
+			if info.Type == 1 {
+				if err := stock.Update(client); err != nil {
+					fmt.Println("Stock Updateエラー :", err)
+					res.Status = 30
+					return
+				}
+
+			} else if info.Type == 2 {
+				if err := stock.Insert(client); err != nil {
+					fmt.Println("Stock Insertエラー :", err)
+					res.Status = 30
+					return
+				}
+
+			} else if info.Type == 3 {
+				if err := stock.Delete(client); err != nil {
+					fmt.Println("Stock Deleteエラー :", err)
+					res.Status = 30
+					return
+				}
+
+			} else {
+				fmt.Println("エラー : Type is not found")
+				res.Status = 30
+				return
+			}
+		}
+
+		// 処理が正常終了したらManageテーブルに登録
+		if err := info.Insert(client); err != nil {
+			fmt.Println("EditInfo Insertエラー :", err)
 			res.Status = 30
-			return res
+			return
 		}
 
 		res.Status = 10
-		return
 	})
 
 	http.ListenAndServe(":8080", nil)

@@ -23,7 +23,7 @@ model Order {
   order_time DateTime @db.Timestamptz(6)
 }
 
-model TableEditInfo {
+model EditInfo {
   id Int @id @unique @default(autoincrement())
   table String
   type Int
