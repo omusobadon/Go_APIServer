@@ -5,7 +5,10 @@
 2.　環境変数ファイルの作成
     Discordの GO-API repo の環境変数ファイルを Go_APIServer/ へコピー
 
-3.　/Go_APIServer内で以下のコマンドを実行してDBを同期（DB操作用のパッケージが生成される）
+3.　Prisma-Client-Goのインストール
+    go get github.com/steebchen/prisma-client-go
+
+4.　/Go_APIServer内で以下のコマンドを実行してDBを同期（DB操作用のパッケージが生成される）
     go run github.com/steebchen/prisma-client-go db push
 
 ### ファイル一覧　###
