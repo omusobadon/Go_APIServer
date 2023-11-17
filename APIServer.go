@@ -11,13 +11,13 @@ import (
 
 // 注文処理後のレスポンス用
 type ResponseBody struct {
-	Status    int   `json:"status"`
-	OrderInfo Order `json:"order_info"`
+	Message string `json:"message"`
+	Order   *Order `json:"order"`
 }
 
 // 編集処理後のレスポンス用
-type EditResponse struct {
-	Status   int       `json:"status"`
+type EditResponseBody struct {
+	Message  string    `json:"message"`
 	EditInfo *EditInfo `json:"edit_info"`
 }
 
@@ -31,53 +31,59 @@ func APIServer() error {
 	// POST--------------------------------------------------------------------------------------
 	http.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
 		var order Order
-		var order_stat int
+		var status int     // HTTPステータスコード
+		var message string // 処理結果メッセージ
 		post_cnt++
 
 		fmt.Printf("*** Post No.%d ***\n", post_cnt)
 
+		// 注文情報をデコード
+		if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+			message = fmt.Sprint("POSTデコードエラー", err)
+			status = http.StatusBadRequest
+			return
+		}
+
 		// 注文時刻を取得
 		order.Time = GetTime()
+
+		fmt.Println("Order :", order)
 
 		// データベース接続用クライアントの作成
 		client := db.NewClient()
 		if err := client.Prisma.Connect(); err != nil {
-			fmt.Println("クライアント接続エラー :", err)
-			order_stat = 30
+			message = fmt.Sprint("クライアント接続エラー :", err)
+			status = http.StatusBadRequest
 			return
 		}
-
-		// 関数の終了時に実行
 		defer func() {
 			// クライアントの切断
 			if err := client.Prisma.Disconnect(); err != nil {
 				panic(err)
 			}
 
-			// レスポンスの作成
+			// レスポンスボディの作成
 			res := ResponseBody{
-				Status:    order_stat,
-				OrderInfo: order,
+				Message: message,
+				Order:   &order,
 			}
 
 			// レスポンスをJSON形式で返す
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK) // 200 OK
+			w.WriteHeader(status)
+
 			if err := json.NewEncoder(w).Encode(res); err != nil {
 				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-				fmt.Println("レスポンスの作成エラー :", err)
+				message = fmt.Sprint("レスポンスの作成エラー :", err)
+				status = http.StatusInternalServerError
 				return
 			}
 
-			// ステータスメッセージの表示（サーバ側）
-			switch order_stat {
-			case 10:
-				fmt.Println("正常終了")
-			case 20:
-				fmt.Println("在庫不足")
-			case 30:
-			default:
-				fmt.Println("未解決エラー")
+			// 処理結果メッセージの表示（サーバ側）
+			if status == 0 || message == "" {
+				fmt.Println("ステータスコードまたはメッセージがありません")
+			} else {
+				fmt.Printf("[%d] %s", status, message)
 			}
 
 			fmt.Printf("*** Post No.%d End ***\n", post_cnt)
@@ -85,59 +91,44 @@ func APIServer() error {
 
 		ctx := context.Background()
 
-		// POSTされたjsonを注文テーブルOrderにデコード
-		if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
-			fmt.Println("POSTデコードエラー :", err)
-			order_stat = 30
-			return
-		}
-
-		fmt.Println("注文情報 :", order)
-
 		// 注文情報の商品idと一致する在庫情報を取得
-		stock, err := client.Stock.FindFirst(
-			db.Stock.ProductID.Equals(order.Product_id),
+		stock, err := client.Stock.FindUnique(
+			db.Stock.ID.Equals(order.Product),
 		).Exec(ctx)
 		if err != nil {
-			fmt.Println("在庫テーブル取得エラー :", err)
-			order_stat = 30
+			message = fmt.Sprint("在庫テーブル取得エラー :", err)
+			status = http.StatusBadRequest
 			return
 		}
 
 		// 在庫が注文数を上回っていたら注文処理を行う
-		if stock.InnerStock.StockNum >= order.Num {
+		if stock.InnerStock.Num >= order.Num {
 			// 在庫テーブルに注文情報を反映
-			_, err := client.Stock.FindMany(
-				db.Stock.ProductID.Equals(order.Product_id),
+			_, err := client.Stock.FindUnique(
+				db.Stock.ID.Equals(order.Product),
 			).Update(
-				db.Stock.StockNum.Set(stock.InnerStock.StockNum - order.Num),
+				db.Stock.Num.Set(stock.InnerStock.Num - order.Num),
 			).Exec(ctx)
 			if err != nil {
-				fmt.Println("在庫テーブルアップデートエラー :", err)
-				order_stat = 30
+				message = fmt.Sprint("在庫テーブルアップデートエラー :", err)
+				status = http.StatusBadRequest
 				return
 			}
 
 			// 注文テーブルに注文情報をインサート
-			_, err = client.Order.CreateOne(
-				db.Order.CustID.Set(order.Cust_id),
-				db.Order.ProductID.Set(order.Product_id),
-				db.Order.OrderNum.Set(order.Num),
-				db.Order.OrderTime.Set(order.Time),
-			).Exec(ctx)
-			if err != nil {
-				fmt.Println("注文テーブルインサートエラー :", err)
-				order_stat = 30
+			if err := order.Insert(client); err != nil {
+				message = fmt.Sprint("注文テーブルインサートエラー :", err)
+				status = http.StatusBadRequest
 
 				// 注文を登録できなかった場合に在庫の数量を戻す
 				_, err := client.Stock.FindMany(
-					db.Stock.ProductID.Equals(order.Product_id),
+					db.Stock.ID.Equals(order.Product),
 				).Update(
-					db.Stock.StockNum.Set(stock.InnerStock.StockNum + order.Num),
+					db.Stock.Num.Set(stock.InnerStock.Num + order.Num),
 				).Exec(ctx)
 				if err != nil {
-					fmt.Println("在庫整合性エラー :", err)
-					order_stat = 100
+					message = fmt.Sprint("在庫整合性エラー :", err)
+					status = http.StatusInternalServerError
 					return
 				}
 				return
@@ -146,23 +137,25 @@ func APIServer() error {
 			// 正常終了のとき
 			// 顧客IDと時刻をもとにテーブルを検索して注文IDを取得
 			order_info, err := client.Order.FindFirst(
-				db.Order.CustID.Equals(order.Cust_id),
-				db.Order.OrderTime.Equals(order.Time),
+				db.Order.Customer.Equals(order.Customer),
+				db.Order.Time.Equals(order.Time),
 			).Exec(ctx)
 			if err != nil {
-				fmt.Println("注文情報取得エラー :", err)
-				order_stat = 30
+				message = fmt.Sprint("注文情報取得エラー :", err)
+				status = http.StatusInternalServerError
 				return
 			}
 
-			order.Order_id = order_info.OrderID
-			fmt.Println("注文番号 :", order.Order_id)
+			order.ID = order_info.ID
+			fmt.Println("注文受付 :", order)
 
-			order_stat = 10
+			message = "正常終了"
+			status = http.StatusOK
 
 		} else {
 			// 在庫不足のとき
-			order_stat = 20
+			message = "在庫不足"
+			status = http.StatusBadRequest
 		}
 	})
 
@@ -234,7 +227,7 @@ func APIServer() error {
 		fmt.Fprintf(w, "| 商品id | 商品名 |  個数  |\n")
 		for i := 0; i < len(stock); i++ {
 			s := stock[i].InnerStock
-			fmt.Fprintf(w, "|%8d|%8s|%8d|\n", s.ProductID, s.ProductName, s.StockNum)
+			fmt.Fprintf(w, "|%8d|%8s|%8d|\n", s.ID, s.Name, s.Num)
 		}
 		fmt.Fprintln(w)
 
@@ -247,35 +240,37 @@ func APIServer() error {
 		fmt.Fprint(w, "|注文番号|  客id  | 商品id | 注文数 | 注文時間\n")
 		for i := 0; i < len(order); i++ {
 			o := order[i].InnerOrder
-			fmt.Fprintf(w, "|%8d|%8d|%8d|%8d|%+v\n", o.OrderID, o.CustID, o.ProductID, o.OrderNum, o.OrderTime)
+			fmt.Fprintf(w, "|%8d|%8d|%8d|%8d|%+v\n", o.ID, o.Customer, o.ID, o.Num, o.Time)
 		}
 	})
 
 	// テーブル編集 -----------------------------------------------------------------------------------
 	http.HandleFunc("/edit", func(w http.ResponseWriter, r *http.Request) {
 		var info EditInfo
-		res := EditResponse{EditInfo: &info}
+		var status int
+		var message string
+		// res := EditResponseBody{EditInfo: &info}
 		mpost_cnt++
 
 		fmt.Printf("### Manage Post No.%d ###\n", mpost_cnt)
 
 		// 更新情報をデコード
 		if err := json.NewDecoder(r.Body).Decode(&info); err != nil {
-			fmt.Println("POSTデコードエラー :", err)
-			res.Status = 30
+			message = fmt.Sprint("POSTデコードエラー :", err)
+			status = http.StatusBadRequest
 			return
 		}
 
 		// 更新時刻を取得
 		info.Time = GetTime()
 
-		fmt.Println("info :", info)
+		fmt.Println("EditInfo :", info)
 
-		// DBクライアントの作成
+		// データベース接続用クライアントの作成
 		client := db.NewClient()
 		if err := client.Prisma.Connect(); err != nil {
-			fmt.Println("クライアント接続エラー :", err)
-			res.Status = 30
+			message = fmt.Sprint("クライアント接続エラー :", err)
+			status = http.StatusBadRequest
 			return
 		}
 		defer func() {
@@ -284,25 +279,27 @@ func APIServer() error {
 				panic(err)
 			}
 
+			// レスポンスボディの作成
+			res := EditResponseBody{
+				Message:  message,
+				EditInfo: &info,
+			}
+
 			// レスポンスをJSON形式で返す
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK) // 200 OK
+			w.WriteHeader(status)
 
 			if err := json.NewEncoder(w).Encode(res); err != nil {
 				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-				fmt.Println("レスポンスの作成エラー :", err)
-				res.Status = 30
+				message = fmt.Sprint("レスポンスの作成エラー :", err)
+				status = http.StatusInternalServerError
 			}
 
-			// ステータスメッセージの表示（サーバ側）
-			switch res.Status {
-			case 10:
-				fmt.Println("正常終了")
-			case 20:
-				fmt.Println("在庫不足")
-			case 30:
-			default:
-				fmt.Println("未解決エラー")
+			// 処理結果メッセージの表示（サーバ側）
+			if status == 0 || message == "" {
+				fmt.Println("ステータスコードまたはメッセージがありません")
+			} else {
+				fmt.Printf("[%d] %s", status, message)
 			}
 
 			fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
@@ -311,8 +308,8 @@ func APIServer() error {
 		// mapを各テーブル用の構造体に変換するため、一度jsonに変換
 		info_json, err := json.Marshal(info.Info)
 		if err != nil {
-			fmt.Println("infoエンコードエラー :", err)
-			res.Status = 30
+			message = fmt.Sprint("infoエンコードエラー :", err)
+			status = http.StatusBadRequest
 			return
 		}
 
@@ -322,8 +319,8 @@ func APIServer() error {
 
 			// 変換したjsonをStockに変換
 			if err := json.Unmarshal(info_json, &stock); err != nil {
-				fmt.Println("infoデコードエラー :", err)
-				res.Status = 30
+				message = fmt.Sprint("infoデコードエラー :", err)
+				status = http.StatusBadRequest
 				return
 			}
 
@@ -333,40 +330,40 @@ func APIServer() error {
 			// Type 1:Update, 2:Insert, 3:Delete
 			if info.Type == 1 {
 				if err := stock.Update(client); err != nil {
-					fmt.Println("Stock Updateエラー :", err)
-					res.Status = 30
+					message = fmt.Sprint("Stock Updateエラー :", err)
+					status = http.StatusBadRequest
 					return
 				}
 
 			} else if info.Type == 2 {
 				if err := stock.Insert(client); err != nil {
-					fmt.Println("Stock Insertエラー :", err)
-					res.Status = 30
+					message = fmt.Sprint("Stock Insertエラー :", err)
+					status = http.StatusBadRequest
 					return
 				}
 
 			} else if info.Type == 3 {
 				if err := stock.Delete(client); err != nil {
-					fmt.Println("Stock Deleteエラー :", err)
-					res.Status = 30
+					message = fmt.Sprint("Stock Deleteエラー :", err)
+					status = http.StatusBadRequest
 					return
 				}
 
 			} else {
-				fmt.Println("エラー : Type is not found")
-				res.Status = 30
+				message = fmt.Sprintf("エラー : Type is not found")
+				status = http.StatusBadRequest
 				return
 			}
 		}
 
 		// 処理が正常終了したらManageテーブルに登録
 		if err := info.Insert(client); err != nil {
-			fmt.Println("EditInfo Insertエラー :", err)
-			res.Status = 30
+			message = fmt.Sprint("EditInfo Insertエラー :", err)
+			status = http.StatusBadRequest
 			return
 		}
 
-		res.Status = 10
+		status = 10
 	})
 
 	http.ListenAndServe(":8080", nil)

@@ -7,11 +7,11 @@ import (
 
 // 注文情報テーブル
 type Order struct {
-	Order_id   int       `json:"order_id"`
-	Cust_id    int       `json:"cust_id"`
-	Product_id int       `json:"product_id"`
-	Num        int       `json:"order_num"`
-	Time       time.Time `json:"order_time"`
+	ID       int       `json:"id"`
+	Customer int       `json:"customer"`
+	Product  int       `json:"product"`
+	Num      int       `json:"num"`
+	Time     time.Time `json:"time"`
 }
 
 // 在庫テーブル

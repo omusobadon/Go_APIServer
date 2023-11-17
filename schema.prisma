@@ -10,17 +10,17 @@ generator db {
 }
  
 model Stock {
-  product_id Int @id @unique @default(autoincrement())
-  product_name String
-  stock_num Int
+  id Int @id @unique @default(autoincrement())
+  name String
+  num Int
 }
 
 model Order {
-  order_id Int @id @unique @default(autoincrement())
-  cust_id Int
-  product_id Int
-  order_num Int
-  order_time DateTime @db.Timestamptz(6)
+  id Int @id @unique @default(autoincrement())
+  customer Int
+  product Int
+  num Int
+  time DateTime @db.Timestamptz()
 }
 
 model EditInfo {

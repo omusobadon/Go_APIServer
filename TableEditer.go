@@ -8,16 +8,34 @@ import (
 	"Go_APIServer/db"
 )
 
+// Order Insert
+func (o Order) Insert(c *db.PrismaClient) error {
+	ctx := context.Background()
+
+	// Insert
+	_, err := c.Order.CreateOne(
+		db.Order.Customer.Set(o.Customer),
+		db.Order.Product.Set(o.Product),
+		db.Order.Num.Set(o.Num),
+		db.Order.Time.Set(o.Time),
+	).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Stock Update
 func (s Stock) Update(c *db.PrismaClient) error {
 	ctx := context.Background()
 
 	// Update
 	_, err := c.Stock.FindUnique(
-		db.Stock.ProductID.Equals(s.ID),
+		db.Stock.ID.Equals(s.ID),
 	).Update(
-		db.Stock.ProductName.Set(s.Name),
-		db.Stock.StockNum.Set(s.Num),
+		db.Stock.Name.Set(s.Name),
+		db.Stock.Num.Set(s.Num),
 	).Exec(ctx)
 	if err != nil {
 		return err
@@ -32,8 +50,8 @@ func (s Stock) Insert(c *db.PrismaClient) error {
 
 	// Insert
 	_, err := c.Stock.CreateOne(
-		db.Stock.ProductName.Set(s.Name),
-		db.Stock.StockNum.Set(s.Num),
+		db.Stock.Name.Set(s.Name),
+		db.Stock.Num.Set(s.Num),
 	).Exec(ctx)
 	if err != nil {
 		return err
@@ -48,7 +66,7 @@ func (s Stock) Delete(c *db.PrismaClient) error {
 
 	// Delete
 	_, err := c.Stock.FindUnique(
-		db.Stock.ProductID.Equals(s.ID),
+		db.Stock.ID.Equals(s.ID),
 	).Delete().Exec(ctx)
 	if err != nil {
 		return err
