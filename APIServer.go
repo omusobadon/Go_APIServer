@@ -7,12 +7,20 @@ import (
 	"net/http"
 
 	"Go_APIServer/db"
+
+	"golang.org/x/vuln/client"
 )
 
 // レスポンス用のJSONデータを格納する構造体
 type ResponseBody struct {
 	Status int   `json:"status"`
 	Order  Order `json:"order_info"`
+}
+
+// 管理処理後のレスポンス用
+type EditResponse struct {
+	Status int       `json:"status"`
+	Info   *EditInfo `json:"manage"`
 }
 
 func APIServer() error {
@@ -245,36 +253,12 @@ func APIServer() error {
 		}
 	})
 
+	// 管理用 -----------------------------------------------------------------------------------
 	http.HandleFunc("/manage_post", func(w http.ResponseWriter, r *http.Request) {
-		var info ManageInfo
-		var res ManageRes
+		var info *TableEditInfo
 		mpost_cnt++
 
 		fmt.Printf("### Manage Post No.%d ###\n", mpost_cnt)
-
-		defer func() {
-			// レスポンスをJSON形式で返す
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK) // 200 OK
-			if err := json.NewEncoder(w).Encode(res); err != nil {
-				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-				fmt.Println("レスポンスの作成エラー :", err)
-				res.Status = 30
-			}
-
-			// ステータスメッセージの表示（サーバ側）
-			switch res.Status {
-			case 10:
-				fmt.Println("正常終了")
-			case 20:
-				fmt.Println("在庫不足")
-			case 30:
-			default:
-				fmt.Println("未解決エラー")
-			}
-
-			fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
-		}()
 
 		// 更新情報をデコード
 		if err := json.NewDecoder(r.Body).Decode(&info); err != nil {
@@ -283,8 +267,60 @@ func APIServer() error {
 			return
 		}
 
-		// 更新情報を受け取って処理を行い、レスポンス用のデータを返す
-		res = DBManage(info)
+		res := info.TableEdit()
+
+		// mapを一度jsonに戻す
+		// post_json, err := json.Marshal(manage.Info)
+		// if err != nil {
+		// 	fmt.Println("Infoエンコードエラー :", err)
+		// 	res.Status = 30
+		// 	return
+		// }
+
+		// レスポンスをJSON形式で返す
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // 200 OK
+		if err := json.NewEncoder(w).Encode(res); err != nil {
+			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+			fmt.Println("レスポンスの作成エラー :", err)
+		}
+
+		// ステータスメッセージの表示（サーバ側）
+		switch res.Status {
+		case 10:
+			fmt.Println("正常終了")
+		case 20:
+			fmt.Println("在庫不足")
+		case 30:
+		default:
+			fmt.Println("未解決エラー")
+		}
+
+		fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
+
+		// テーブルごとに処理を分岐
+		if manage.Table == "stock" {
+			stock.Manage(client)
+
+		} else {
+			fmt.Println("エラー : テーブルが見つかりません")
+			res.Status = 30
+			return
+		}
+
+		// 処理が正常終了したらManageテーブルに登録
+		_, err := client.Manage.CreateOne(
+
+			manage,
+		).Exec(ctx)
+		if err != nil {
+			fmt.Println("ManageテーブルInsertエラー :", err)
+			res.Status = 30
+			return res
+		}
+
+		res.Status = 10
+		return
 	})
 
 	http.ListenAndServe(":8080", nil)

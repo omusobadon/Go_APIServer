@@ -11,7 +11,7 @@ generator db {
  
 model Stock {
   product_id Int @id @unique @default(autoincrement())
-  product_name String @db.VarChar(20)
+  product_name String
   stock_num Int
 }
 
@@ -23,9 +23,10 @@ model Order {
   order_time DateTime @db.Timestamptz(6)
 }
 
-model Manage {
+model TableEditInfo {
   id Int @id @unique @default(autoincrement())
   table String
-  info String
+  type Int
+  info Json
   time DateTime @db.Timestamptz()
 }

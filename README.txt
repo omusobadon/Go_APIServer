@@ -27,3 +27,14 @@ ip nat inside source static tcp 192.168.1.7 8080 interface GigabitEthernet8 8080
     "product_id": 2,
     "order_num": 43
 }
+
+### /manage_post 形式 ###
+{
+    "type": 0,
+    "table": "stock",
+    "info": {
+        "id": 1,
+        "name": "car1",
+        "num": 2
+    }
+}
