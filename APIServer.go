@@ -12,7 +12,7 @@ import (
 // 注文処理後のレスポンス用
 type ResponseBody struct {
 	Message string `json:"message"`
-	Order   *Order `json:"order"`
+	Order   Order  `json:"order"`
 }
 
 // 編集処理後のレスポンス用
@@ -30,7 +30,7 @@ func APIServer() error {
 
 	// POST--------------------------------------------------------------------------------------
 	http.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
-		var order Order
+		var order *Order
 		var status int     // HTTPステータスコード
 		var message string // 処理結果メッセージ
 		post_cnt++
@@ -47,7 +47,7 @@ func APIServer() error {
 		// 注文時刻を取得
 		order.Time = GetTime()
 
-		fmt.Println("Order :", order)
+		fmt.Println("注文情報 :", order)
 
 		// データベース接続用クライアントの作成
 		client := db.NewClient()
@@ -65,7 +65,7 @@ func APIServer() error {
 			// レスポンスボディの作成
 			res := ResponseBody{
 				Message: message,
-				Order:   &order,
+				Order:   *order,
 			}
 
 			// レスポンスをJSON形式で返す
@@ -83,7 +83,7 @@ func APIServer() error {
 			if status == 0 || message == "" {
 				fmt.Println("ステータスコードまたはメッセージがありません")
 			} else {
-				fmt.Printf("[%d] %s", status, message)
+				fmt.Printf("[%d] %s\n", status, message)
 			}
 
 			fmt.Printf("*** Post No.%d End ***\n", post_cnt)
@@ -96,7 +96,7 @@ func APIServer() error {
 			db.Stock.ID.Equals(order.Product),
 		).Exec(ctx)
 		if err != nil {
-			message = fmt.Sprint("在庫テーブル取得エラー :", err)
+			message = fmt.Sprint("在庫テーブル取得エラー : ", err)
 			status = http.StatusBadRequest
 			return
 		}
@@ -350,7 +350,7 @@ func APIServer() error {
 				}
 
 			} else {
-				message = fmt.Sprintf("エラー : Type is not found")
+				message = "エラー : Type is not found"
 				status = http.StatusBadRequest
 				return
 			}

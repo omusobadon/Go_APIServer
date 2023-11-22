@@ -19,8 +19,12 @@ model Order {
   id Int @id @unique @default(autoincrement())
   customer Int
   product Int
+  start DateTime @db.Timestamptz()
+  end DateTime @db.Timestamptz()
   num Int
   time DateTime @db.Timestamptz()
+  state Int
+  note String
 }
 
 model EditInfo {

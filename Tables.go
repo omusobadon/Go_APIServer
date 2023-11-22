@@ -10,15 +10,23 @@ type Order struct {
 	ID       int       `json:"id"`
 	Customer int       `json:"customer"`
 	Product  int       `json:"product"`
+	Start    time.Time `json:"start"`
+	End      time.Time `json:"end"`
 	Num      int       `json:"num"`
 	Time     time.Time `json:"time"`
+	State    int       `json:"state"`
+	Note     string    `json:"note"`
 }
 
 // 在庫テーブル
 type Stock struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Num  int    `json:"num"`
+	ID       int       `json:"id"`
+	Category string    `json:"category"`
+	Name     string    `json:"name"`
+	Interval time.Time `json:"interval"`
+	Value    int       `json:"value"`
+	Num      int       `json:"num"`
+	Note     string    `json:"note"`
 }
 
 // POSTされるDB管理情報
