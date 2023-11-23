@@ -16,8 +16,12 @@ func (o Order) Insert(c *db.PrismaClient) error {
 	_, err := c.Order.CreateOne(
 		db.Order.Customer.Set(o.Customer),
 		db.Order.Product.Set(o.Product),
+		db.Order.Start.Set(o.Start), // 追加
+		db.Order.End.Set(o.End),     // 追加
 		db.Order.Num.Set(o.Num),
 		db.Order.Time.Set(o.Time),
+		db.Order.State.Set(o.State), // 追加
+		db.Order.Note.Set(o.Note),   // 追加
 	).Exec(ctx)
 	if err != nil {
 		return err
@@ -89,7 +93,7 @@ func (e EditInfo) Insert(c *db.PrismaClient) error {
 	_, err = c.EditInfo.CreateOne(
 		db.EditInfo.Table.Set(e.Table),
 		db.EditInfo.Type.Set(e.Type),
-		db.EditInfo.Info.Set(info_json),
+		db.EditInfo.Info.Set(string(info_json)), // []byte から string への変換
 		db.EditInfo.Time.Set(e.Time),
 	).Exec(ctx)
 	if err != nil {

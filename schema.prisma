@@ -1,14 +1,13 @@
 datasource db {
-  provider = "postgres"
-
-  // .envファイルからデータベースURLを読み込み
-  url = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./db/dev.sqlite"
 }
- 
+
+
 generator db {
   provider = "go run github.com/steebchen/prisma-client-go"
 }
- 
+
 model Stock {
   id Int @id @unique @default(autoincrement())
   name String
@@ -19,10 +18,10 @@ model Order {
   id Int @id @unique @default(autoincrement())
   customer Int
   product Int
-  start DateTime @db.Timestamptz()
-  end DateTime @db.Timestamptz()
+  start DateTime
+  end DateTime
   num Int
-  time DateTime @db.Timestamptz()
+  time DateTime
   state Int
   note String
 }
@@ -31,6 +30,6 @@ model EditInfo {
   id Int @id @unique @default(autoincrement())
   table String
   type Int
-  info Json
-  time DateTime @db.Timestamptz()
+  info String // Json 型から String 型に変更
+  time DateTime
 }
