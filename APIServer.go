@@ -11,6 +11,7 @@ import (
 
 // 注文処理後のレスポンス用
 type ResponseBody struct {
+	Status  int    `json:"status"`
 	Message string `json:"message"`
 	Order   Order  `json:"order"`
 }
@@ -30,133 +31,41 @@ func APIServer() error {
 
 	// POST--------------------------------------------------------------------------------------
 	http.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
-		var order *Order
-		var status int     // HTTPステータスコード
-		var message string // 処理結果メッセージ
+		var order Order
 		post_cnt++
 
 		fmt.Printf("*** Post No.%d ***\n", post_cnt)
 
 		// 注文情報をデコード
 		if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
-			message = fmt.Sprint("POSTデコードエラー", err)
-			status = http.StatusBadRequest
+			// res.Message = fmt.Sprint("POSTデコードエラー :", err)
+			// res.Status = http.StatusBadRequest
 			return
 		}
 
-		// 注文時刻を取得
-		order.Time = GetTime()
+		// 注文処理
+		res := order.Process()
 
-		fmt.Println("注文情報 :", order)
+		// レスポンスをJSON形式で返す
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(res.Status)
 
-		// データベース接続用クライアントの作成
-		client := db.NewClient()
-		if err := client.Prisma.Connect(); err != nil {
-			message = fmt.Sprint("クライアント接続エラー :", err)
-			status = http.StatusBadRequest
-			return
-		}
-		defer func() {
-			// クライアントの切断
-			if err := client.Prisma.Disconnect(); err != nil {
-				panic(err)
-			}
-
-			// レスポンスボディの作成
-			res := ResponseBody{
-				Message: message,
-				Order:   *order,
-			}
-
-			// レスポンスをJSON形式で返す
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(status)
-
-			if err := json.NewEncoder(w).Encode(res); err != nil {
-				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-				message = fmt.Sprint("レスポンスの作成エラー :", err)
-				status = http.StatusInternalServerError
-				return
-			}
-
-			// 処理結果メッセージの表示（サーバ側）
-			if status == 0 || message == "" {
-				fmt.Println("ステータスコードまたはメッセージがありません")
-			} else {
-				fmt.Printf("[%d] %s\n", status, message)
-			}
-
-			fmt.Printf("*** Post No.%d End ***\n", post_cnt)
-		}()
-
-		ctx := context.Background()
-
-		// 注文情報の商品idと一致する在庫情報を取得
-		stock, err := client.Stock.FindUnique(
-			db.Stock.ID.Equals(order.Product),
-		).Exec(ctx)
-		if err != nil {
-			message = fmt.Sprint("在庫テーブル取得エラー : ", err)
-			status = http.StatusBadRequest
+		if err := json.NewEncoder(w).Encode(res); err != nil {
+			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+			res.Message = fmt.Sprint("レスポンスの作成エラー :", err)
+			res.Status = http.StatusInternalServerError
 			return
 		}
 
-		// 在庫が注文数を上回っていたら注文処理を行う
-		if stock.InnerStock.Num >= order.Num {
-			// 在庫テーブルに注文情報を反映
-			_, err := client.Stock.FindUnique(
-				db.Stock.ID.Equals(order.Product),
-			).Update(
-				db.Stock.Num.Set(stock.InnerStock.Num - order.Num),
-			).Exec(ctx)
-			if err != nil {
-				message = fmt.Sprint("在庫テーブルアップデートエラー :", err)
-				status = http.StatusBadRequest
-				return
-			}
-
-			// 注文テーブルに注文情報をインサート
-			if err := order.Insert(client); err != nil {
-				message = fmt.Sprint("注文テーブルインサートエラー :", err)
-				status = http.StatusBadRequest
-
-				// 注文を登録できなかった場合に在庫の数量を戻す
-				_, err := client.Stock.FindMany(
-					db.Stock.ID.Equals(order.Product),
-				).Update(
-					db.Stock.Num.Set(stock.InnerStock.Num + order.Num),
-				).Exec(ctx)
-				if err != nil {
-					message = fmt.Sprint("在庫整合性エラー :", err)
-					status = http.StatusInternalServerError
-					return
-				}
-				return
-			}
-
-			// 正常終了のとき
-			// 顧客IDと時刻をもとにテーブルを検索して注文IDを取得
-			order_info, err := client.Order.FindFirst(
-				db.Order.Customer.Equals(order.Customer),
-				db.Order.Time.Equals(order.Time),
-			).Exec(ctx)
-			if err != nil {
-				message = fmt.Sprint("注文情報取得エラー :", err)
-				status = http.StatusInternalServerError
-				return
-			}
-
-			order.ID = order_info.ID
-			fmt.Println("注文受付 :", order)
-
-			message = "正常終了"
-			status = http.StatusOK
-
+		// 処理結果メッセージの表示（サーバ側）
+		if status == 0 || message == "" {
+			fmt.Println("ステータスコードまたはメッセージがありません")
 		} else {
-			// 在庫不足のとき
-			message = "在庫不足"
-			status = http.StatusBadRequest
+			fmt.Printf("[%d] %s\n", status, message)
 		}
+
+		fmt.Printf("*** Post No.%d End ***\n", post_cnt)
+
 	})
 
 	// GET-------------------------------------------------------------------------------------

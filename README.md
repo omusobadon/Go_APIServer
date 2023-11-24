@@ -49,10 +49,3 @@
         "num": 2
     }
 }
-
-### 初回のGit Push設定
-- git branch -M main
-- git push -u origin main
-
-### NAT設定
-ip nat inside source static tcp 192.168.1.7 8080 interface GigabitEthernet8 8080

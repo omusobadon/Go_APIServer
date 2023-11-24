@@ -4,20 +4,25 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"Go_APIServer/db"
 )
 
 // Order Insert
-func (o Order) Insert(c *db.PrismaClient) error {
+func (o *Order) Insert(c *db.PrismaClient) error {
 	ctx := context.Background()
 
 	// Insert
 	_, err := c.Order.CreateOne(
 		db.Order.Customer.Set(o.Customer),
 		db.Order.Product.Set(o.Product),
+		db.Order.Start.Set(o.Start),
+		db.Order.End.Set(o.End),
 		db.Order.Num.Set(o.Num),
 		db.Order.Time.Set(o.Time),
+		db.Order.State.Set(o.State),
+		db.Order.Note.Set(o.Note),
 	).Exec(ctx)
 	if err != nil {
 		return err
@@ -27,16 +32,37 @@ func (o Order) Insert(c *db.PrismaClient) error {
 }
 
 // Stock Update
-func (s Stock) Update(c *db.PrismaClient) error {
+func (s *Stock) Update(c *db.PrismaClient) error {
 	ctx := context.Background()
+
+	// Stock構造体の値の有無で場合分け
+	var p []db.StockSetParam
+	if s.ID != nil {
+		return errors.New("IDがありません")
+	}
+	if s.Category != nil {
+		p = append(p, db.Stock.Category.Set(*s.Category))
+	}
+	if s.Name != nil {
+		p = append(p, db.Stock.Name.Set(*s.Name))
+	}
+	if s.Interval != nil {
+		p = append(p, db.Stock.Interval.Set(*s.Interval))
+	}
+	if s.Value != nil {
+		p = append(p, db.Stock.Value.Set(*s.Value))
+	}
+	if s.Num != nil {
+		p = append(p, db.Stock.Num.Set(*s.Num))
+	}
+	if s.Note != nil {
+		p = append(p, db.Stock.Note.Set(*s.Note))
+	}
 
 	// Update
 	_, err := c.Stock.FindUnique(
-		db.Stock.ID.Equals(s.ID),
-	).Update(
-		db.Stock.Name.Set(s.Name),
-		db.Stock.Num.Set(s.Num),
-	).Exec(ctx)
+		db.Stock.ID.Equals(*s.ID),
+	).Update(p...).Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -45,13 +71,17 @@ func (s Stock) Update(c *db.PrismaClient) error {
 }
 
 // Stock Insert
-func (s Stock) Insert(c *db.PrismaClient) error {
+func (s *Stock) Insert(c *db.PrismaClient) error {
 	ctx := context.Background()
 
 	// Insert
 	_, err := c.Stock.CreateOne(
-		db.Stock.Name.Set(s.Name),
-		db.Stock.Num.Set(s.Num),
+		db.Stock.Category.Set(*s.Category),
+		db.Stock.Name.Set(*s.Name),
+		db.Stock.Interval.Set(*s.Interval),
+		db.Stock.Value.Set(*s.Value),
+		db.Stock.Num.Set(*s.Num),
+		db.Stock.Note.Set(*s.Note),
 	).Exec(ctx)
 	if err != nil {
 		return err
@@ -61,12 +91,12 @@ func (s Stock) Insert(c *db.PrismaClient) error {
 }
 
 // Stock Delete
-func (s Stock) Delete(c *db.PrismaClient) error {
+func (s *Stock) Delete(c *db.PrismaClient) error {
 	ctx := context.Background()
 
 	// Delete
 	_, err := c.Stock.FindUnique(
-		db.Stock.ID.Equals(s.ID),
+		db.Stock.ID.Equals(*s.ID),
 	).Delete().Exec(ctx)
 	if err != nil {
 		return err
@@ -76,7 +106,7 @@ func (s Stock) Delete(c *db.PrismaClient) error {
 }
 
 // EditInfo Insert
-func (e EditInfo) Insert(c *db.PrismaClient) error {
+func (e *EditInfo) Insert(c *db.PrismaClient) error {
 	ctx := context.Background()
 
 	// DB登録のためMap型をjsonに変換

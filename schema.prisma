@@ -11,8 +11,12 @@ generator db {
  
 model Stock {
   id Int @id @unique @default(autoincrement())
+  category String
   name String
+  interval DateTime @db.Time()
+  value Int
   num Int
+  note String
 }
 
 model Order {
