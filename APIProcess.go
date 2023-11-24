@@ -7,17 +7,14 @@ import (
 	"net/http"
 )
 
-type HTTPError struct {
+// レスポンス用のHTTPステータスコードとメッセージ
+type Response struct {
 	Status  int
 	Message string
 }
 
-func (err *HTTPError) Error() string {
-	return fmt.Sprintf("[%d] : %s", err.Status, err.Message)
-}
-
 // 注文処理 Orderテーブルを受け取って注文処理を行い、ステータスコードとメッセージを返す
-func (order *Order) Process() error {
+func (order *Order) Process() *Response {
 
 	// 注文時刻を取得
 	order.Time = GetTime()
@@ -27,14 +24,15 @@ func (order *Order) Process() error {
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
 	if err := client.Prisma.Connect(); err != nil {
-		message = fmt.Sprint("クライアント接続エラー :", err)
-		status = http.StatusBadRequest
-		return
+		return &Response{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("クライアント接続エラー :", err),
+		}
 	}
 	defer func() {
 		// クライアントの切断
 		if err := client.Prisma.Disconnect(); err != nil {
-			panic(err)
+			panic(fmt.Sprint("クライアント切断エラー :", err))
 		}
 	}()
 
@@ -45,9 +43,10 @@ func (order *Order) Process() error {
 		db.Stock.ID.Equals(order.Product),
 	).Exec(ctx)
 	if err != nil {
-		message = fmt.Sprint("在庫テーブル取得エラー : ", err)
-		status = http.StatusBadRequest
-		return
+		return &Response{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("在庫テーブル取得エラー : ", err),
+		}
 	}
 
 	// 在庫が注文数を上回っていたら注文処理を行う
@@ -59,15 +58,14 @@ func (order *Order) Process() error {
 			db.Stock.Num.Set(stock.InnerStock.Num - order.Num),
 		).Exec(ctx)
 		if err != nil {
-			message = fmt.Sprint("在庫テーブルアップデートエラー :", err)
-			status = http.StatusBadRequest
-			return
+			return &Response{
+				Status:  http.StatusBadRequest,
+				Message: fmt.Sprint("在庫テーブルアップデートエラー :", err),
+			}
 		}
 
 		// 注文テーブルに注文情報をインサート
 		if err := order.Insert(client); err != nil {
-			message = fmt.Sprint("注文テーブルインサートエラー :", err)
-			status = http.StatusBadRequest
 
 			// 注文を登録できなかった場合に在庫の数量を戻す
 			_, err := client.Stock.FindMany(
@@ -76,11 +74,13 @@ func (order *Order) Process() error {
 				db.Stock.Num.Set(stock.InnerStock.Num + order.Num),
 			).Exec(ctx)
 			if err != nil {
-				message = fmt.Sprint("在庫整合性エラー :", err)
-				status = http.StatusInternalServerError
-				return
+				panic(fmt.Sprint("在庫整合性エラー :", err))
 			}
-			return
+
+			return &Response{
+				Status:  http.StatusBadRequest,
+				Message: fmt.Sprint("注文テーブルインサートエラー :", err),
+			}
 		}
 
 		// 正常終了のとき
@@ -90,20 +90,25 @@ func (order *Order) Process() error {
 			db.Order.Time.Equals(order.Time),
 		).Exec(ctx)
 		if err != nil {
-			message = fmt.Sprint("注文情報取得エラー :", err)
-			status = http.StatusInternalServerError
-			return
+			return &Response{
+				Status:  http.StatusInternalServerError,
+				Message: fmt.Sprint("注文情報取得エラー :", err),
+			}
 		}
 
 		order.ID = order_info.ID
 		fmt.Println("注文受付 :", order)
 
-		message = "正常終了"
-		status = http.StatusOK
+		return &Response{
+			Status:  http.StatusOK,
+			Message: "正常終了",
+		}
 
 	} else {
 		// 在庫不足のとき
-		message = "在庫不足"
-		status = http.StatusBadRequest
+		return &Response{
+			Status:  http.StatusBadRequest,
+			Message: "在庫不足",
+		}
 	}
 }

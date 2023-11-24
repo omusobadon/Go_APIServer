@@ -11,9 +11,8 @@ import (
 
 // 注文処理後のレスポンス用
 type ResponseBody struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-	Order   Order  `json:"order"`
+	Response Response `json:"response"`
+	Order    Order    `json:"order"`
 }
 
 // 編集処理後のレスポンス用
@@ -31,40 +30,50 @@ func APIServer() error {
 
 	// POST--------------------------------------------------------------------------------------
 	http.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
-		var order Order
+		var order *Order
+		var res *Response
 		post_cnt++
 
 		fmt.Printf("*** Post No.%d ***\n", post_cnt)
 
 		// 注文情報をデコード
 		if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
-			// res.Message = fmt.Sprint("POSTデコードエラー :", err)
-			// res.Status = http.StatusBadRequest
+			res.Status = http.StatusBadRequest
+			res.Message = fmt.Sprint("POSTデコードエラー :", err)
 			return
 		}
 
 		// 注文処理
-		res := order.Process()
+		res = order.Process()
 
-		// レスポンスをJSON形式で返す
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(res.Status)
+		defer func() {
 
-		if err := json.NewEncoder(w).Encode(res); err != nil {
-			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-			res.Message = fmt.Sprint("レスポンスの作成エラー :", err)
-			res.Status = http.StatusInternalServerError
-			return
-		}
+			// レスポンスボディの作成
+			res_body := ResponseBody{
+				Response: *res,
+				Order:    *order,
+			}
 
-		// 処理結果メッセージの表示（サーバ側）
-		if status == 0 || message == "" {
-			fmt.Println("ステータスコードまたはメッセージがありません")
-		} else {
-			fmt.Printf("[%d] %s\n", status, message)
-		}
+			// レスポンスをJSON形式で返す
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(res.Status)
 
-		fmt.Printf("*** Post No.%d End ***\n", post_cnt)
+			if err := json.NewEncoder(w).Encode(res_body); err != nil {
+				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+				res.Status = http.StatusInternalServerError
+				res.Message = fmt.Sprint("レスポンスの作成エラー :", err)
+			}
+
+			// 処理結果メッセージの表示（サーバ側）
+			if res.Status == 0 || res.Message == "" {
+				fmt.Println("ステータスコードまたはメッセージがありません")
+			} else {
+				fmt.Printf("[%d] %s\n", res.Status, res.Message)
+			}
+
+			fmt.Printf("*** Post No.%d End ***\n", post_cnt)
+
+		}()
 
 	})
 
