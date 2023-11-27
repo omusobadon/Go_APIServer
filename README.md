@@ -1,8 +1,3 @@
----
-title: "Goについて"
-description: "Goについて"
----
-
 ## 環境構築方法
 ### 1. クローンの生成
 ```shell
@@ -36,7 +31,7 @@ description: "Goについて"
 - POSTされた注文情報を取得して注文処理
 
 - json形式
-```json
+```json:/post形式
 {
     "cust_id": 100,
     "product_id": 2,
