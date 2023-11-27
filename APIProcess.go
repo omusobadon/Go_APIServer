@@ -57,6 +57,8 @@ func (order *Order) Process() *Response {
 		}
 	}
 
+	//
+
 	// 在庫が注文数を上回っていたら注文処理を行う
 	if stock.InnerStock.Num >= order.Num {
 		// 在庫テーブルに注文情報を反映
