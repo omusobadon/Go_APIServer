@@ -1,16 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"time"
 )
 
 func test() {
-	e := fmt.Errorf("NotFound")
-	err := fmt.Errorf("Order : %w", e)
+	s := "99h99m"
+	time, _ := time.ParseDuration(s)
 
-	fmt.Println(err)
-
-	fmt.Println(errors.Is(err, err))
+	fmt.Printf("型 : %T, 値 : %v\n", time, time)
 
 }

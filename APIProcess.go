@@ -49,6 +49,14 @@ func (order *Order) Process() *Response {
 		}
 	}
 
+	// 予約開始時刻が終了時刻より後でないかチェック
+	if i := order.End.Sub(order.Start); i <= 0 {
+		return &Response{
+			Status:  http.StatusBadRequest,
+			Message: "予約時刻が不正",
+		}
+	}
+
 	// 在庫が注文数を上回っていたら注文処理を行う
 	if stock.InnerStock.Num >= order.Num {
 		// 在庫テーブルに注文情報を反映
