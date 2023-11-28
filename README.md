@@ -33,9 +33,12 @@
 - json形式
 ```json
 {
-    "cust_id": 100,
-    "product_id": 2,
-    "order_num": 43
+    "id": 1,
+    "customer": 1,
+    "product": 1,
+    "start": "2021-01-01T10:10:00+09:00",
+    "end": "2021-01-01T10:10:00+09:00",
+    "num": 1
 }
 ```
 
