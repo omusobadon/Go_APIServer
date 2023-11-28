@@ -31,7 +31,7 @@
 - POSTされた注文情報を取得して注文処理
 
 - json形式
-```json:/post形式
+```json
 {
     "cust_id": 100,
     "product_id": 2,

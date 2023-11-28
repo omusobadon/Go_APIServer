@@ -6,6 +6,7 @@ import (
 )
 
 // 注文情報テーブル
+// State : [1]:予約受付, [2]:予約終了, [3]:予約キャンセル
 type Order struct {
 	ID       int       `json:"id"`
 	Customer int       `json:"customer"`
