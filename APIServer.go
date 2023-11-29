@@ -333,7 +333,7 @@ func APIServer() error {
 			if status == 0 || message == "" {
 				fmt.Println("ステータスコードまたはメッセージがありません")
 			} else {
-				fmt.Printf("[%d] %s", status, message)
+				fmt.Printf("[%d] %s\n", status, message)
 			}
 
 			fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
