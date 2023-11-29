@@ -74,6 +74,9 @@ func (order *Order) Process() *Response {
 			}
 		}
 
+		// Order.Stateを注文受付状態[1]に変更
+		order.State = 1
+
 		// 注文テーブルに注文情報をインサート
 		if err := order.Insert(client); err != nil {
 

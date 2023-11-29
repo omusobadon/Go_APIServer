@@ -36,8 +36,8 @@
     "id": 1,
     "customer": 1,
     "product": 1,
-    "start": "2021-01-01T10:10:00+09:00",
-    "end": "2021-01-01T10:10:00+09:00",
+    "start": "2023-11-10T10:10:00+09:00",
+    "end": "2023-11-10T18:10:00+09:00",
     "num": 1
 }
 ```
@@ -49,15 +49,16 @@
 - Table テーブル名
 - Info  更新内容
 
-- json形式
+- 例）Insert
 ```json
 {
-    "type": 1,
+    "type": 2,
     "table": "stock",
     "info": {
-        "id": 1,
+        "category": "car",
         "name": "car1",
-        "num": 2
+        "value": 8000,
+        "num": 22
     }
 }
 ```
