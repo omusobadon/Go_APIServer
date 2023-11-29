@@ -11,4 +11,6 @@ func test() {
 
 	fmt.Printf("型 : %T, 値 : %v\n", time, time)
 
+	// test
+
 }
