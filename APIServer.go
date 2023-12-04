@@ -80,32 +80,27 @@ func APIServer() error {
 
 	// GET-------------------------------------------------------------------------------------
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+		var status int
+		var message string
 		get_cnt++
+
 		fmt.Printf("* Get No.%d *\n", get_cnt)
 
 		// データベース接続用クライアントの作成
 		client := db.NewClient()
 		if err := client.Prisma.Connect(); err != nil {
-			fmt.Println("クライアント接続エラー :", err)
+			status = http.StatusBadRequest
+			message = fmt.Sprint("クライアント接続エラー :", err)
 			return
 		}
-
-		// 関数終了時に実行
-		defer func() {
-			// クライアントの切断
-			if err := client.Prisma.Disconnect(); err != nil {
-				panic(err)
-			}
-
-			fmt.Printf("* Get No.%d End *\n", get_cnt)
-		}()
 
 		ctx := context.Background()
 
 		// Stockテーブルの内容を一括取得
 		stock, err := client.Stock.FindMany().Exec(ctx)
 		if err != nil {
-			fmt.Println("在庫テーブル取得エラー :", err)
+			status = http.StatusBadRequest
+			message = fmt.Sprint("在庫テーブル取得エラー :", err)
 			return
 		}
 
@@ -114,12 +109,35 @@ func APIServer() error {
 		// インデントなし
 		// stock_json, err := json.Marshal(stock)
 		if err != nil {
-			fmt.Println("JSON変換エラー :", err)
+			status = http.StatusBadRequest
+			message = fmt.Sprint("JSON変換エラー :", err)
 			return
 		}
 
-		fmt.Fprintln(w, string(stock_json))
-		fmt.Println("正常終了")
+		status = http.StatusOK
+		message = "正常終了"
+
+		defer func() {
+			// クライアントの切断
+			if err := client.Prisma.Disconnect(); err != nil {
+				fmt.Println("クライアント切断エラー")
+				panic(err)
+			}
+
+			// レスポンスをJSON形式で返す
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			w.Write(stock_json)
+
+			// 処理結果メッセージの表示（サーバ側）
+			if status == 0 || message == "" {
+				fmt.Println("ステータスコードまたはメッセージがありません")
+			} else {
+				fmt.Printf("[%d] %s\n", status, message)
+			}
+
+			fmt.Printf("* Get No.%d End *\n", get_cnt)
+		}()
 	})
 
 	// Order変更（予約の終了、キャンセル処理）
