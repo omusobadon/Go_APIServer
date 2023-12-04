@@ -37,8 +37,8 @@ func (s *Stock) Update(c *db.PrismaClient) error {
 
 	// Stock構造体の値の有無で場合分け
 	var p []db.StockSetParam
-	if s.ID != nil {
-		return errors.New("IDがありません")
+	if s.ID == nil {
+		return errors.New("エラー : IDがありません")
 	}
 	if s.Category != nil {
 		p = append(p, db.Stock.Category.Set(*s.Category))
@@ -74,6 +74,32 @@ func (s *Stock) Update(c *db.PrismaClient) error {
 func (s *Stock) Insert(c *db.PrismaClient) error {
 	ctx := context.Background()
 
+	// 値がnilの場合は初期化
+	if s.Category == nil {
+		category := ""
+		s.Category = &category
+	}
+	if s.Name == nil {
+		name := ""
+		s.Name = &name
+	}
+	if s.Interval == nil {
+		interval := ""
+		s.Interval = &interval
+	}
+	if s.Value == nil {
+		value := 0
+		s.Value = &value
+	}
+	if s.Num == nil {
+		num := 0
+		s.Num = &num
+	}
+	if s.Note == nil {
+		note := ""
+		s.Note = &note
+	}
+
 	// Insert
 	_, err := c.Stock.CreateOne(
 		db.Stock.Category.Set(*s.Category),
@@ -93,6 +119,10 @@ func (s *Stock) Insert(c *db.PrismaClient) error {
 // Stock Delete
 func (s *Stock) Delete(c *db.PrismaClient) error {
 	ctx := context.Background()
+
+	if s.ID == nil {
+		return errors.New("IDがありません")
+	}
 
 	// Delete
 	_, err := c.Stock.FindUnique(
