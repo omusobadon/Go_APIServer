@@ -325,37 +325,6 @@ func APIServer() error {
 			status = http.StatusBadRequest
 			return
 		}
-		defer func() {
-			// クライアントの切断
-			if err := client.Prisma.Disconnect(); err != nil {
-				panic(err)
-			}
-
-			// レスポンスボディの作成
-			res := EditResponseBody{
-				Message:  message,
-				EditInfo: &info,
-			}
-
-			// レスポンスをJSON形式で返す
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(status)
-
-			if err := json.NewEncoder(w).Encode(res); err != nil {
-				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-				message = fmt.Sprint("レスポンスの作成エラー :", err)
-				status = http.StatusInternalServerError
-			}
-
-			// 処理結果メッセージの表示（サーバ側）
-			if status == 0 || message == "" {
-				fmt.Println("ステータスコードまたはメッセージがありません")
-			} else {
-				fmt.Printf("[%d] %s\n", status, message)
-			}
-
-			fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
-		}()
 
 		// mapを各テーブル用の構造体に変換するため、一度jsonに変換
 		info_json, err := json.Marshal(info.Info)
@@ -367,7 +336,7 @@ func APIServer() error {
 
 		// 各テーブルごとに処理を分岐
 		if info.Table == "stock" {
-			var stock Stock
+			var stock *Stock
 
 			// 変換したjsonをStockに変換
 			if err := json.Unmarshal(info_json, &stock); err != nil {
@@ -375,8 +344,6 @@ func APIServer() error {
 				status = http.StatusBadRequest
 				return
 			}
-
-			fmt.Println("stock :", stock)
 
 			// 編集タイプごとに処理を分岐
 			// Type 1:Update, 2:Insert, 3:Delete
@@ -416,6 +383,38 @@ func APIServer() error {
 		}
 
 		status = 10
+
+		defer func() {
+			// クライアントの切断
+			if err := client.Prisma.Disconnect(); err != nil {
+				panic(err)
+			}
+
+			// レスポンスボディの作成
+			res := EditResponseBody{
+				Message:  message,
+				EditInfo: &info,
+			}
+
+			// レスポンスをJSON形式で返す
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+
+			if err := json.NewEncoder(w).Encode(res); err != nil {
+				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+				message = fmt.Sprint("レスポンスの作成エラー :", err)
+				status = http.StatusInternalServerError
+			}
+
+			// 処理結果メッセージの表示（サーバ側）
+			if status == 0 || message == "" {
+				fmt.Println("ステータスコードまたはメッセージがありません")
+			} else {
+				fmt.Printf("[%d] %s\n", status, message)
+			}
+
+			fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
+		}()
 	})
 
 	http.ListenAndServe(":8080", nil)

@@ -21,13 +21,13 @@ type Order struct {
 
 // 在庫テーブル
 type Stock struct {
-	ID       *int       `json:"id"`
-	Category *string    `json:"category"`
-	Name     *string    `json:"name"`
-	Interval *time.Time `json:"interval"`
-	Value    *int       `json:"value"`
-	Num      *int       `json:"num"`
-	Note     *string    `json:"note"`
+	ID       *int    `json:"id"`
+	Category *string `json:"category"`
+	Name     *string `json:"name"`
+	Interval *string `json:"interval"`
+	Value    *int    `json:"value"`
+	Num      *int    `json:"num"`
+	Note     *string `json:"note"`
 }
 
 // POSTされるDB管理情報
