@@ -13,7 +13,7 @@ model Stock {
   id Int @id @unique @default(autoincrement())
   category String
   name String
-  interval DateTime @db.Time()
+  interval String
   value Int
   num Int
   note String
