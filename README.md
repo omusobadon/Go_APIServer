@@ -33,7 +33,6 @@
 - json形式
 ```json
 {
-    "id": 1,
     "customer": 1,
     "product": 1,
     "start": "2023-11-10T10:10:00+09:00",
