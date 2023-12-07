@@ -10,15 +10,21 @@ import (
 )
 
 // 注文処理後のレスポンス用
-type ResponseBody struct {
-	Response Response `json:"response"`
-	Order    Order    `json:"order"`
+type PostResponseBody struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Order   Order  `json:"order"`
 }
 
 // 編集処理後のレスポンス用
 type EditResponseBody struct {
 	Message  string    `json:"message"`
 	EditInfo *EditInfo `json:"edit_info"`
+}
+
+type Response struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
 }
 
 func APIServer() error {
@@ -32,49 +38,59 @@ func APIServer() error {
 	// POST--------------------------------------------------------------------------------------
 	http.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
 		var order *Order
-		var res *Response
+		var res PostResponseBody
+		var status int
+		var message string
 		post_cnt++
 
 		fmt.Printf("*** Post No.%d ***\n", post_cnt)
 
-		// 注文情報をデコード
-		if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
-			res.Status = http.StatusBadRequest
-			res.Message = fmt.Sprint("POSTデコードエラー :", err)
-			return
-		}
-
-		// 注文処理
-		res = order.Process()
-
 		defer func() {
 
 			// レスポンスボディの作成
-			res_body := ResponseBody{
-				Response: *res,
-				Order:    *order,
+			if order == nil {
+				res = PostResponseBody{
+					Status:  status,
+					Message: message,
+				}
+			} else {
+				res = PostResponseBody{
+					Status:  status,
+					Message: message,
+					Order:   *order,
+				}
 			}
 
 			// レスポンスをJSON形式で返す
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(res.Status)
+			w.WriteHeader(status)
 
-			if err := json.NewEncoder(w).Encode(res_body); err != nil {
+			if err := json.NewEncoder(w).Encode(res); err != nil {
 				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-				res.Status = http.StatusInternalServerError
-				res.Message = fmt.Sprint("レスポンスの作成エラー :", err)
+				status = http.StatusInternalServerError
+				message = fmt.Sprint("レスポンスの作成エラー :", err)
 			}
 
 			// 処理結果メッセージの表示（サーバ側）
-			if res.Status == 0 || res.Message == "" {
+			if status == 0 || message == "" {
 				fmt.Println("ステータスコードまたはメッセージがありません")
 			} else {
-				fmt.Printf("[%d] %s\n", res.Status, res.Message)
+				fmt.Printf("[%d] %s\n", status, message)
 			}
 
 			fmt.Printf("*** Post No.%d End ***\n", post_cnt)
 
 		}()
+
+		// 注文情報をデコード
+		if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("POSTデコードエラー :", err)
+			return
+		}
+
+		// 注文処理
+		status, message = order.Process()
 
 	})
 
