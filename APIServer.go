@@ -271,61 +271,19 @@ func APIServer() error {
 
 	})
 
-	// GET テスト用 すべてのテーブルを一覧表示-------------------------------------------------------
-	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		// データベース接続用クライアントの作成
-		client := db.NewClient()
-		if err := client.Prisma.Connect(); err != nil {
-			fmt.Println(err)
-		}
-		defer func() {
-			if err := client.Prisma.Disconnect(); err != nil {
-				panic(err)
-			}
-		}()
-
-		ctx := context.Background()
-
-		// Stockテーブルの内容を一括取得
-		stock, err := client.Stock.FindMany().Exec(ctx)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		fmt.Fprintf(w, "| 商品id | 商品名 |  個数  |\n")
-		for i := 0; i < len(stock); i++ {
-			s := stock[i].InnerStock
-			fmt.Fprintf(w, "|%8d|%8s|%8d|\n", s.ID, s.Name, s.Num)
-		}
-		fmt.Fprintln(w)
-
-		// Orderテーブルの内容を一括取得
-		order, err := client.Order.FindMany().Exec(ctx)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		fmt.Fprint(w, "|注文番号|  客id  | 商品id | 注文数 | 注文時間\n")
-		for i := 0; i < len(order); i++ {
-			o := order[i].InnerOrder
-			fmt.Fprintf(w, "|%8d|%8d|%8d|%8d|%+v\n", o.ID, o.Customer, o.ID, o.Num, o.Time)
-		}
-	})
-
 	// テーブル編集 -----------------------------------------------------------------------------------
 	http.HandleFunc("/edit", func(w http.ResponseWriter, r *http.Request) {
 		var info EditInfo
 		var status int
 		var message string
-		// res := EditResponseBody{EditInfo: &info}
 		mpost_cnt++
 
 		fmt.Printf("### Manage Post No.%d ###\n", mpost_cnt)
 
 		// 更新情報をデコード
 		if err := json.NewDecoder(r.Body).Decode(&info); err != nil {
-			message = fmt.Sprint("POSTデコードエラー :", err)
 			status = http.StatusBadRequest
+			message = fmt.Sprint("POSTデコードエラー :", err)
 			return
 		}
 
@@ -337,69 +295,10 @@ func APIServer() error {
 		// データベース接続用クライアントの作成
 		client := db.NewClient()
 		if err := client.Prisma.Connect(); err != nil {
+			status = http.StatusBadRequest
 			message = fmt.Sprint("クライアント接続エラー :", err)
-			status = http.StatusBadRequest
 			return
 		}
-
-		// mapを各テーブル用の構造体に変換するため、一度jsonに変換
-		info_json, err := json.Marshal(info.Info)
-		if err != nil {
-			message = fmt.Sprint("infoエンコードエラー :", err)
-			status = http.StatusBadRequest
-			return
-		}
-
-		// 各テーブルごとに処理を分岐
-		if info.Table == "stock" {
-			var stock *Stock
-
-			// 変換したjsonをStockに変換
-			if err := json.Unmarshal(info_json, &stock); err != nil {
-				message = fmt.Sprint("infoデコードエラー :", err)
-				status = http.StatusBadRequest
-				return
-			}
-
-			// 編集タイプごとに処理を分岐
-			// Type 1:Update, 2:Insert, 3:Delete
-			if info.Type == 1 {
-				if err := stock.Update(client); err != nil {
-					message = fmt.Sprint("Stock Updateエラー :", err)
-					status = http.StatusBadRequest
-					return
-				}
-
-			} else if info.Type == 2 {
-				if err := stock.Insert(client); err != nil {
-					message = fmt.Sprint("Stock Insertエラー :", err)
-					status = http.StatusBadRequest
-					return
-				}
-
-			} else if info.Type == 3 {
-				if err := stock.Delete(client); err != nil {
-					message = fmt.Sprint("Stock Deleteエラー :", err)
-					status = http.StatusBadRequest
-					return
-				}
-
-			} else {
-				message = "エラー : Type is not found"
-				status = http.StatusBadRequest
-				return
-			}
-		}
-
-		// 処理が正常終了したらManageテーブルに登録
-		if err := info.Insert(client); err != nil {
-			message = fmt.Sprint("EditInfo Insertエラー :", err)
-			status = http.StatusBadRequest
-			return
-		}
-
-		status = 10
-
 		defer func() {
 			// クライアントの切断
 			if err := client.Prisma.Disconnect(); err != nil {
@@ -418,8 +317,8 @@ func APIServer() error {
 
 			if err := json.NewEncoder(w).Encode(res); err != nil {
 				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-				message = fmt.Sprint("レスポンスの作成エラー :", err)
 				status = http.StatusInternalServerError
+				message = fmt.Sprint("レスポンスの作成エラー :", err)
 			}
 
 			// 処理結果メッセージの表示（サーバ側）
@@ -431,6 +330,66 @@ func APIServer() error {
 
 			fmt.Printf("### Manage Post No.%d END ###\n", mpost_cnt)
 		}()
+
+		// mapを各テーブル用の構造体に変換するため、一度jsonに変換
+		info_json, err := json.Marshal(info.Info)
+		if err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("infoエンコードエラー :", err)
+			return
+		}
+
+		// 各テーブルごとに処理を分岐
+		if info.Table == "stock" {
+			var stock *Stock
+
+			// 変換したjsonをStockに変換
+			if err := json.Unmarshal(info_json, &stock); err != nil {
+				status = http.StatusBadRequest
+				message = fmt.Sprint("infoデコードエラー :", err)
+				return
+			}
+
+			// 編集タイプごとに処理を分岐
+			// Type 1:Update, 2:Insert, 3:Delete
+			if info.Type == 1 {
+				if err := stock.Update(client); err != nil {
+					status = http.StatusBadRequest
+					message = fmt.Sprint("Stock Updateエラー :", err)
+					return
+				}
+
+			} else if info.Type == 2 {
+				if err := stock.Insert(client); err != nil {
+					status = http.StatusBadRequest
+					message = fmt.Sprint("Stock Insertエラー :", err)
+					return
+				}
+
+			} else if info.Type == 3 {
+				if err := stock.Delete(client); err != nil {
+					status = http.StatusBadRequest
+					message = fmt.Sprint("Stock Deleteエラー :", err)
+					return
+				}
+
+			} else {
+				status = http.StatusBadRequest
+				message = "エラー : Type is not found"
+				return
+			}
+		}
+
+		// 処理が正常終了したらManageテーブルに登録
+		if err := info.Insert(client); err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("EditInfo Insertエラー :", err)
+			return
+		}
+
+		status = http.StatusOK
+		message = "正常終了"
+
 	})
 
 	http.ListenAndServe(":8080", nil)
