@@ -1,5 +1,5 @@
 // 各テーブル用の構造体まとめ
-package main
+package handlers
 
 import (
 	"time"

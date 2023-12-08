@@ -1,5 +1,5 @@
 // テーブル編集用のメソッドまとめ
-package main
+package handlers
 
 import (
 	"context"

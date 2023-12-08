@@ -1,4 +1,5 @@
-package main
+// 時刻取得処理
+package handlers
 
 import (
 	"encoding/json"
