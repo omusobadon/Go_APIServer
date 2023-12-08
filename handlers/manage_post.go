@@ -145,6 +145,10 @@ func ManagePost(w http.ResponseWriter, r *http.Request) {
 			message = "エラー : Type is not found"
 			return
 		}
+	} else {
+		status = http.StatusBadRequest
+		message = "エラー : Table is not found"
+		return
 	}
 
 	// 処理が正常終了したらManageテーブルに登録

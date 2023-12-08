@@ -13,9 +13,13 @@ model Stock {
   id Int @id @unique @default(autoincrement())
   category String
   name String
+  start DateTime @db.Timestamptz()
+  end DateTime @db.Timestamptz()
   interval String
   value Int
+  default_num Int
   num Int
+  state Boolean
   note String
 }
 
