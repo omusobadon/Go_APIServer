@@ -10,16 +10,24 @@ import (
 
 // レスポンスに変換する構造体
 type MGetResponseBody struct {
-	Message string          `json:"message"`
-	Order   []db.OrderModel `json:"order"`
-	Stock   []db.StockModel `json:"stock"`
+	Message  string             `json:"message"`
+	Order    []db.OrderModel    `json:"order"`
+	Stock    []db.StockModel    `json:"stock"`
+	Product  []db.ProductModel  `json:"product"`
+	Fee      []db.FeeModel      `json:"fee"`
+	Payment  []db.PaymentModel  `json:"payment"`
+	Customer []db.CustomerModel `json:"customer"`
 }
 
 var mget_cnt int // ManageGETのカウント用
 
 func ManageGet(w http.ResponseWriter, r *http.Request) {
-	var stock []db.StockModel
 	var order []db.OrderModel
+	var stock []db.StockModel
+	var product []db.ProductModel
+	var fee []db.FeeModel
+	var payment []db.PaymentModel
+	var customer []db.CustomerModel
 	var status int
 	var message string
 	mget_cnt++
@@ -30,9 +38,13 @@ func ManageGet(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		// レスポンスボディの作成
 		res := MGetResponseBody{
-			Message: message,
-			Stock:   stock,
-			Order:   order,
+			Message:  message,
+			Order:    order,
+			Stock:    stock,
+			Product:  product,
+			Fee:      fee,
+			Payment:  payment,
+			Customer: customer,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -71,19 +83,51 @@ func ManageGet(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
+	// Orderテーブルの内容を一括取得
+	order, err := client.Order.FindMany().Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("注文テーブル取得エラー : ", err)
+	}
+
 	// Stockテーブルの内容を一括取得
-	stock, err := client.Stock.FindMany().Exec(ctx)
+	stock, err = client.Stock.FindMany().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
 		message = fmt.Sprint("在庫テーブル取得エラー : ", err)
 		return
 	}
 
-	// Orderテーブルの内容を一括取得
-	order, err = client.Order.FindMany().Exec(ctx)
+	// Productテーブルの内容を一括取得
+	product, err = client.Product.FindMany().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("注文テーブル取得エラー : ", err)
+		message = fmt.Sprint("商品テーブル取得エラー : ", err)
+		return
+	}
+
+	// Feeテーブルの内容を一括取得
+	fee, err = client.Fee.FindMany().Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("料金テーブル取得エラー : ", err)
+		return
+	}
+
+	// Paymentテーブルの内容を一括取得
+	payment, err = client.Payment.FindMany().Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("決済処理テーブル取得エラー : ", err)
+		return
+	}
+
+	// Customerテーブルの内容を一括取得
+	customer, err = client.Customer.FindMany().Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("顧客情報テーブル取得エラー : ", err)
+		return
 	}
 
 	status = http.StatusOK
