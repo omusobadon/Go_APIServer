@@ -65,7 +65,6 @@ func AutoInsert() error {
 					db.Product.Name.Set(fmt.Sprint(product_type, i+1)),
 					db.Product.Value.Set(value),
 					db.Product.Num.Set(num),
-					db.Product.Note.Set(""),
 				).Exec(ctx)
 				if err != nil {
 					return fmt.Errorf("商品テーブルインサートエラー : %w", err)
@@ -101,12 +100,14 @@ func AutoInsert() error {
 
 			// Insert
 			_, err := client.Stock.CreateOne(
-				db.Stock.Product.Set(v.ID),
 				db.Stock.Start.Set(start),
 				db.Stock.End.Set(end),
 				db.Stock.Interval.Set(interval),
 				db.Stock.Num.Set(v.Num),
 				db.Stock.State.Set(true),
+				db.Stock.Product.Link(
+					db.Product.ID.Equals(v.ID),
+				),
 			).Exec(ctx)
 			if err != nil {
 				return fmt.Errorf("在庫テーブルインサートエラー : %w", err)

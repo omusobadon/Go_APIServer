@@ -99,12 +99,14 @@ func (s *Stock) Insert(c *db.PrismaClient) error {
 
 	// Insert
 	_, err := c.Stock.CreateOne(
-		db.Stock.Product.Set(*s.Product),
 		db.Stock.Start.Set(*s.Start),
 		db.Stock.End.Set(*s.End),
 		db.Stock.Interval.Set(*s.Interval),
 		db.Stock.Num.Set(*s.Num),
 		db.Stock.State.Set(*s.State),
+		db.Stock.Product.Link(
+			db.Product.ID.Equals(*s.Product),
+		),
 	).Exec(ctx)
 	if err != nil {
 		return err
