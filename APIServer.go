@@ -6,8 +6,18 @@ import (
 	"net/http"
 )
 
+// 商品・在庫テーブルが空の場合、自動生成するかどうか
+const auto_insert = true
+
 func APIServer() error {
 	fmt.Println("Server started.")
+
+	if auto_insert {
+		// 商品・在庫テーブルが空の場合は自動生成するAutoInsert
+		if err := handlers.AutoInsert(); err != nil {
+			fmt.Println("自動インサートエラー : 処理を続行します")
+		}
+	}
 
 	// 各ハンドラの呼び出し
 	http.HandleFunc("/get", handlers.OrderGet)

@@ -1,2 +1,5 @@
+# 環境設定ファイル
 .env
-test.go
+
+# testディレクトリ
+test/

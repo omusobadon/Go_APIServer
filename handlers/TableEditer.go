@@ -38,25 +38,22 @@ func (s *Stock) Update(c *db.PrismaClient) error {
 	// Stock構造体の値の有無で場合分け
 	var p []db.StockSetParam
 	if s.ID == nil {
-		return errors.New("エラー : IDがありません")
+		return errors.New("エラー : 在庫IDがありません")
 	}
-	if s.Category != nil {
-		p = append(p, db.Stock.Category.Set(*s.Category))
+	if s.Start != nil {
+		p = append(p, db.Stock.Start.Set(*s.Start))
 	}
-	if s.Name != nil {
-		p = append(p, db.Stock.Name.Set(*s.Name))
+	if s.End != nil {
+		p = append(p, db.Stock.End.Set(*s.End))
 	}
 	if s.Interval != nil {
 		p = append(p, db.Stock.Interval.Set(*s.Interval))
 	}
-	if s.Value != nil {
-		p = append(p, db.Stock.Value.Set(*s.Value))
-	}
 	if s.Num != nil {
 		p = append(p, db.Stock.Num.Set(*s.Num))
 	}
-	if s.Note != nil {
-		p = append(p, db.Stock.Note.Set(*s.Note))
+	if s.State != nil {
+		p = append(p, db.Stock.State.Set(*s.State))
 	}
 
 	// Update
@@ -75,39 +72,39 @@ func (s *Stock) Insert(c *db.PrismaClient) error {
 	ctx := context.Background()
 
 	// 値がnilの場合は初期化
-	if s.Category == nil {
-		category := ""
-		s.Category = &category
-	}
-	if s.Name == nil {
-		name := ""
-		s.Name = &name
-	}
-	if s.Interval == nil {
-		interval := ""
-		s.Interval = &interval
-	}
-	if s.Value == nil {
-		value := 0
-		s.Value = &value
-	}
-	if s.Num == nil {
-		num := 0
-		s.Num = &num
-	}
-	if s.Note == nil {
-		note := ""
-		s.Note = &note
-	}
+	// if s.Category == nil {
+	// 	category := ""
+	// 	s.Category = &category
+	// }
+	// if s.Name == nil {
+	// 	name := ""
+	// 	s.Name = &name
+	// }
+	// if s.Interval == nil {
+	// 	interval := ""
+	// 	s.Interval = &interval
+	// }
+	// if s.Value == nil {
+	// 	value := 0
+	// 	s.Value = &value
+	// }
+	// if s.Num == nil {
+	// 	num := 0
+	// 	s.Num = &num
+	// }
+	// if s.Note == nil {
+	// 	note := ""
+	// 	s.Note = &note
+	// }
 
 	// Insert
 	_, err := c.Stock.CreateOne(
-		db.Stock.Category.Set(*s.Category),
-		db.Stock.Name.Set(*s.Name),
+		db.Stock.Product.Set(*s.Product),
+		db.Stock.Start.Set(*s.Start),
+		db.Stock.End.Set(*s.End),
 		db.Stock.Interval.Set(*s.Interval),
-		db.Stock.Value.Set(*s.Value),
 		db.Stock.Num.Set(*s.Num),
-		db.Stock.Note.Set(*s.Note),
+		db.Stock.State.Set(*s.State),
 	).Exec(ctx)
 	if err != nil {
 		return err

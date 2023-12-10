@@ -9,20 +9,8 @@ generator db {
   provider = "go run github.com/steebchen/prisma-client-go"
 }
  
-model Stock {
-  id Int @id @unique @default(autoincrement())
-  category String
-  name String
-  start DateTime @db.Timestamptz()
-  end DateTime @db.Timestamptz()
-  interval String
-  value Int
-  default_num Int
-  num Int
-  state Boolean
-  note String
-}
-
+// 各テーブルについての詳細は、handlers/TablesやTableMemoを参照
+// Order(注文)テーブル
 model Order {
   id Int @id @unique @default(autoincrement())
   customer Int
@@ -35,6 +23,57 @@ model Order {
   note String
 }
 
+// Stock(在庫)テーブル
+model Stock {
+  id Int @id @unique @default(autoincrement())
+  product Int
+  start DateTime @db.Timestamptz()
+  end DateTime @db.Timestamptz()
+  interval String
+  num Int
+  state Boolean
+}
+
+// Product(商品)テーブル
+model Product {
+  id Int @id @unique @default(autoincrement())
+  category String
+  name String
+  value Int
+  num Int
+  note String
+}
+
+// Fee(料金)テーブル
+model Fee {
+  id Int @id @unique @default(autoincrement())
+  value Int
+  tax Int
+  discount Int
+  additional Int
+  sum Int
+}
+
+// Payment(決済処理)テーブル
+model Payment {
+  id Int @id @unique @default(autoincrement())
+  order Int
+  value Int
+  how String
+  state Int
+}
+
+// Customer(顧客情報)テーブル
+model Customer {
+  id Int @id @unique @default(autoincrement())
+  name String
+  phone String
+  mail String
+  address String
+  payment String
+}
+
+// EditInfo(テーブル編集用)テーブル
 model EditInfo {
   id Int @id @unique @default(autoincrement())
   table String
