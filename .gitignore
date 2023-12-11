@@ -2,7 +2,7 @@
 .env
 
 # testファイル
-*test.go
+# *test.go
 
 # 各ディレクトリのtestファイル
-*/*test.go
+# */*test.go
