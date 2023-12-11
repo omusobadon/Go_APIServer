@@ -14,7 +14,8 @@ func APIServer() error {
 	if auto_insert {
 		// 商品・在庫テーブルが空の場合は自動生成するAutoInsert
 		if err := handlers.AutoInsert(); err != nil {
-			fmt.Println("自動インサートエラー : 処理を続行します")
+			fmt.Println("自動インサートエラー :", err)
+			fmt.Println("処理を続行します")
 		}
 	}
 

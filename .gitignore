@@ -1,5 +1,8 @@
 # 環境設定ファイル
 .env
 
-# testディレクトリ
-test/
+# testファイル
+*test.go
+
+# 各ディレクトリのtestファイル
+*/*test.go
