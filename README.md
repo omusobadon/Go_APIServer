@@ -11,10 +11,25 @@
     go get github.com/steebchen/prisma-client-go
 ```
 
-### 4. /Go_APIServer内で以下のコマンドを実行してDBを同期（DB操作用のパッケージが生成される）
+### 4 docker-composeをpodman上でコンテナ起動
+```shell
+    docker-compose up -d
+```
+こんな感じで起動してると思います。
+![Alt text](image.png)
+
+### 5. /Go_APIServer内で以下のコマンドを実行してDBを同期（DB操作用のパッケージが生成される）
 ```shell
     go run github.com/steebchen/prisma-client-go db push
 ```
+localhost:8080にアクセスするとpgadmin4が出るので以下の情報でログイン
+```
+admin@example.com
+password
+```
+めっちゃガバだけどどうしてもいやって人はdocker-composeの環境変数変えれば変更されるんでそれで。
+
+以上
 
 ## ファイル一覧
 - db/             prisma-client-goが作成したフォルダ。DB操作用のパッケージ等
