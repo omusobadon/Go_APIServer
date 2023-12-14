@@ -2,7 +2,7 @@ datasource db {
   provider = "postgres"
 
   // .envファイルからデータベースURLを読み込み
-  url = env("DATABASE_URL")
+  url = "postgresql://postgres:postgres@localhost:5433/postgres"
 }
  
 generator db {
