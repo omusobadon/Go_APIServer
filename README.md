@@ -22,7 +22,7 @@
 ```shell
     go run github.com/steebchen/prisma-client-go db push
 ```
-localhost:8080にアクセスするとpgadmin4が出るので以下の情報でログイン
+localhost:8081にアクセスするとpgadmin4が出るので以下の情報でログイン
 ```
 admin@example.com
 password
