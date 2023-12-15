@@ -16,8 +16,8 @@
 
 ### 予約テーブル : Order
 - 予約ID : id
-- 顧客ID : customer
-- 商品ID : product
+- 顧客ID : customer_id
+- 在庫ID : stock_id
 - 予約開始日時 : start
 - 予約終了日時 : end
 - 予約数 : num

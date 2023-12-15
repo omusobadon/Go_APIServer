@@ -157,7 +157,7 @@ func OrderPost(w http.ResponseWriter, r *http.Request) {
 		// 正常終了のとき
 		// 顧客IDと時刻をもとにテーブルを検索して注文IDを取得
 		order_info, err := client.Order.FindFirst(
-			db.Order.Customer.Equals(order.Customer),
+			db.Order.CustomerID.Equals(order.Customer),
 			db.Order.Time.Equals(order.Time),
 		).Exec(ctx)
 		if err != nil {

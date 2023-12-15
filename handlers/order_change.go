@@ -80,7 +80,7 @@ func OrderChange(w http.ResponseWriter, r *http.Request) {
 
 	// StockIDから在庫情報を取得
 	stock_info, err := client.Stock.FindUnique(
-		db.Stock.ID.Equals(order_info.InnerOrder.Product),
+		db.Stock.ID.Equals(order_info.InnerOrder.StockID),
 	).Exec(ctx)
 	if err != nil {
 		res.Status = http.StatusBadRequest
@@ -111,7 +111,7 @@ func OrderChange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 在庫を元に戻す
-	id := order_info.InnerOrder.Product
+	id := order_info.InnerOrder.StockID
 	num := stock_info.InnerStock.Num + order_info.InnerOrder.Num
 
 	_, err = client.Stock.FindUnique(

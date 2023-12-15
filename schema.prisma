@@ -12,26 +12,28 @@ generator db {
 // 各テーブルについての詳細は、handlers/TablesやTableMemoを参照
 // Order(注文)テーブル
 model Order {
-  id Int @id @default(autoincrement())
-  customer Int
-  product Int
-  start DateTime @db.Timestamptz()
-  end DateTime @db.Timestamptz()
+  id String @id @default(uuid())
+  customer_id Int
+  stock_id Int
+  start DateTime? @db.Timestamptz(0)
+  end DateTime? @db.Timestamptz(0)
   num Int
-  time DateTime @db.Timestamptz()
+  seat Int[]
   state Int
   note String?
+  time DateTime @db.Timestamptz(6) @default(now())
+
+  // duration Duration?
 }
 
 // Stock(在庫)テーブル
 model Stock {
   id Int @id @default(autoincrement())
-  product_id Int @unique
-  start DateTime @db.Timestamptz()
-  end DateTime @db.Timestamptz()
-  interval String
+  product_id Int
+  start DateTime? @db.Timestamptz(0)
+  end DateTime? @db.Timestamptz(0)
   num Int
-  state Boolean
+  state Boolean @default(false)
 
   product Product @relation(fields: [product_id], references: [id])
 }
@@ -43,9 +45,21 @@ model Product {
   name String @unique
   value Int
   num Int
+  interval String @default("0m")
   note String?
 
   stock Stock[]
+}
+
+// Duration(予約期間)テーブル
+model Duration {
+  id Int @id @default(autoincrement())
+  order_id Int
+  start DateTime @db.Timestamptz(0)
+  end DateTime @db.Timestamptz(0)
+  // state Int
+
+  // order Order @relation(fields: [order_id], references: [id])
 }
 
 // Fee(料金)テーブル

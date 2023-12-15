@@ -6,8 +6,12 @@ import (
 	"net/http"
 )
 
-// 商品・在庫テーブルが空の場合、自動生成するかどうか
-const auto_insert = true
+const (
+	// timezone =
+
+	// 商品・在庫テーブルが空の場合、自動生成するかどうか
+	auto_insert bool = true
+)
 
 func APIServer() error {
 
@@ -18,6 +22,8 @@ func APIServer() error {
 			fmt.Println("処理を続行します")
 		}
 	}
+
+	// 各テーブルのチェック
 
 	fmt.Println("Server started!")
 

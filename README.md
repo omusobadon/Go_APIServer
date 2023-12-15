@@ -4,7 +4,8 @@
     git clone https://github.com/omusobadon/Go_APIServer.git
 ```
 ### 2. 環境変数ファイルの作成
-    Discordの GO-API repo の環境変数ファイルを Go_APIServer/ へコピー
+    DBのURLを記述した環境変数ファイル(.env)を"Go_APIServer/"へコピー
+    記述例）DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@[URL]/postgres
 
 ### 3. Prisma-Client-Goのインストール
 ```shell
@@ -15,6 +16,31 @@
 ```shell
     go run github.com/steebchen/prisma-client-go db push
 ```
+
+## 予約プリセット一覧
+以下の3つのプリセットがある。
+プリセットを適用しない場合は0を設定
+
+### レンタカーモード
+- 予約期間：自由
+- 
+
+### 来店予約モード
+- 予約期間：
+-
+
+### 座席指定モード
+- 予約期間：固定
+-
+
+## パラメータ一覧と
+- Reserv_free = 
+
+予約期間の固定
+営業時間の考慮
+座席指定の有無
+ユーザが終了処理を行う必要の有無
+
 
 ## ファイル一覧
 - db/             prisma-client-goが作成したフォルダ。DB操作用のパッケージ等

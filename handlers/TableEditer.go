@@ -13,10 +13,17 @@ import (
 func (o *Order) Insert(c *db.PrismaClient) error {
 	ctx := context.Background()
 
+	t, err := c.Order.CreateOne(
+		db.Order.CustomerID.Set(1),
+		db.Order.StockID.Set(1),
+		db.Order.Num.Set(1),
+		db.Order.State.Set(1),
+	).Exec()
+
 	// Insert
 	_, err := c.Order.CreateOne(
-		db.Order.Customer.Set(o.Customer),
-		db.Order.Product.Set(o.Product),
+		db.Order.CustomerID.Set(o.Customer),
+		db.Order.StockID.Set(o.Product),
 		db.Order.Start.Set(o.Start),
 		db.Order.End.Set(o.End),
 		db.Order.Num.Set(o.Num),
