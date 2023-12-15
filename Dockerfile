@@ -15,6 +15,7 @@ RUN go mod download
 # ソースコードをコピー
 COPY . .
 # アプリケーションをビルド
+RUN go run github.com/steebchen/prisma-client-go db push
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server .
 
 # ステップ2: 実行用の軽量なベースイメージを選択
