@@ -28,8 +28,6 @@ services:
       - service_postgres
 
 volumes:
-  vapp:
-    name: vapp
   volume_postgres:
     name: vpg
   volume_pgadmin:
