@@ -25,18 +25,19 @@ go get github.com/steebchen/prisma-client-go
 go run github.com/steebchen/prisma-client-go db push
 
 echo seting...
-timeout /t 10
+timeout /t 3
 
-echo service_app is started!
 echo Go_APIServer is started!
-podman build -t api-server .
+go run .
 
-echo wait for starting Go_APIServer ...
-timeout /t 3
-podman run -d -p 8080:8080 api-server
+#echo service_app is started!
+#echo Go_APIServer is started!
+#podman build -t api-server .
+#
+#echo wait for starting Go_APIServer ...
+#timeout /t 3
+#podman run -d -p 8080:8080 api-server
+#
+#echo wait for starting Go_APIServer ...
+#timeout /t 3
 
-echo wait for starting Go_APIServer ...
-timeout /t 3
-
-echo Done!
-ENDLOCAL
