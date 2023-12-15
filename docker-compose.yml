@@ -27,17 +27,6 @@ services:
     depends_on:
       - service_postgres
 
-  service_app:
-    depends_on:
-      - service_postgres
-    build: .
-    container_name: container_app
-    ports:
-      - 8080:8080
-    volumes:
-      - vapp:/app
-    
-
 volumes:
   vapp:
     name: vapp
