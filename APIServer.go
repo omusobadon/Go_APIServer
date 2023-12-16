@@ -9,6 +9,23 @@ import (
 // 商品・在庫テーブルが空の場合、自動生成するかどうか
 const auto_insert = true
 
+func CORSMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,X-CSRF-Header,Authorization,Content-Type")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func APIServer() error {
 
 	if auto_insert {
@@ -21,13 +38,13 @@ func APIServer() error {
 
 	fmt.Println("Server started!")
 
-	// 各ハンドラの呼び出し
-	http.HandleFunc("/get", handlers.OrderGet)
-	http.HandleFunc("/post", handlers.OrderPost)
-	http.HandleFunc("/change", handlers.OrderChange)
-	http.HandleFunc("/manage_get", handlers.ManageGet)
-	http.HandleFunc("/manage_post", handlers.ManagePost)
-	http.HandleFunc("/test", handlers.Test)
+	// CORS対応
+	http.HandleFunc("/get", CORSMiddleware(handlers.OrderGet))
+	http.HandleFunc("/post", CORSMiddleware(handlers.OrderPost))
+	http.HandleFunc("/change", CORSMiddleware(handlers.OrderChange))
+	http.HandleFunc("/manage_get", CORSMiddleware(handlers.ManageGet))
+	http.HandleFunc("/manage_post", CORSMiddleware(handlers.ManagePost))
+	http.HandleFunc("/test", CORSMiddleware(handlers.Test))
 
 	// サーバの起動(TCPアドレス, http.Handler)
 	http.ListenAndServe(":8080", nil)
