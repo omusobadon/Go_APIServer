@@ -1,11 +1,14 @@
 ### 用意するテーブル一覧
-- 予約テーブル
-- 在庫テーブル
-- 商品テーブル
-- 料金テーブル
-- 決済処理テーブル
-- 顧客情報テーブル
-- テーブル編集履歴テーブル
+- 注文テーブル : Order
+- 在庫テーブル : Stock
+- 商品テーブル : Product
+- 商品グループテーブル : ProductGroup
+- 座席テーブル : Seat
+- 料金計算テーブル : Fee
+- 決済処理テーブル : Payment
+- 顧客情報テーブル : Customer
+- アクティブ時間テーブル : ActiveTime
+- テーブル編集履歴テーブル : EditInfo
 
 ### 各テーブルについて
 　各テーブル最初のカラムであるIDは、Prismaによって管理される。
@@ -14,13 +17,15 @@
 ### テーブル内容の見方
 - (カラム概要) : (jsonタグかつDBでのカラム名)
 
-### 予約テーブル : Order
-- 予約ID : id
+### 注文テーブル : Order
+- 注文ID : id
+- 注文詳細ID : detail_id
 - 顧客ID : customer_id
 - 在庫ID : stock_id
+- 座席ID : seat_id
+- 注文数 : num
 - 予約開始日時 : start
 - 予約終了日時 : end
-- 予約数 : num
 - 予約日時 : time
 - 予約状態 : state（確定、保留、キャンセルなど）
 - 備考 : note
@@ -30,40 +35,53 @@
 - 商品ID : product
 - 開始時刻 : start（時刻指定する場合。例：映画の開始時刻）
 - 終了時刻 : end
-- インターバル : interval（次の開始時刻までの間隔）
 - 在庫数 : num
 - 在庫状態 : state（予約を受け付けるかなどの状態）
 
 ### 商品テーブル : Product
 - 商品ID : id
-- 商品カテゴリ : category
+- グループID : group_id
 - 商品名 : name
-- 価格 : value
 - 個数 : num（デフォルトの個数。例：映画の座席数）
+- 価格 : value
 - 備考 : note
 
-### 料金テーブル : Fee
-- ID : id
-- 基本料金 : value
-- 税率 : tax
-- 割引 : discount（会員割引など）
-- 追加料金 : additional（追加サービス、損害保険など）
-- 合計金額 : sum
+### 商品グループテーブル : ProductGroup
+- グループID : id
+- 商品カテゴリ : category
+- グループ名 : name
+- インターバル : interval（次の開始時刻までの間隔）
+
+### 座席テーブル : Seat
+- 座席ID : id
+- 商品ID : product_id
+- 座席名 : name
+- 座席状態 : state
+
+### 料金計算テーブル : Fee
+- 料金計算ID : id
+- 商品ID : product_id
+- 税率(%) : tax
+- 割引(%) : special
 
 ### 決済処理テーブル : Payment
 - 決済処理ID : id
-- 予約ID : order
-- 金額 : value
-- 決済方法 : how（クレジットカード、電子マネー、銀行振込なのかなど）
+- 注文ID : order_id
 - 決済状態 : state（支払い完了、未支払い、払い戻し済みなど）
 
 ### 顧客情報テーブル : Customer
 - 顧客ID : id
 - 氏名 : name
-- 電話番号 : phone
 - メール : mail
+- 電話番号 : phone
 - 住所 : address
 - 決済情報 : payment（クレジットカードデータなど）
+
+### アクティブ時間テーブル : ActiveTime
+- ID : id
+- 注文ID : order_id
+- 予約開始日時 : start
+- 予約終了日時 : end
 
 ### テーブル編集履歴テーブル : EditInfo
 - 編集ID : id
