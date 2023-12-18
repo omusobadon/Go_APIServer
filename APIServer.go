@@ -7,21 +7,21 @@ import (
 )
 
 const (
-// timezone =
+	// timezone =
 
-// 商品・在庫テーブルが空の場合、自動生成するかどうか
-// auto_insert bool = true
+	// 商品・在庫テーブルが空の場合、自動生成するかどうか
+	auto_insert bool = true
 )
 
 func APIServer() error {
 
-	// if auto_insert {
-	// 	// 商品・在庫テーブルが空の場合は自動生成するAutoInsert
-	// 	if err := handlers.AutoInsert(); err != nil {
-	// 		fmt.Println("自動インサートエラー :", err)
-	// 		fmt.Println("処理を続行します")
-	// 	}
-	// }
+	if auto_insert {
+		// 商品・在庫テーブルが空の場合は自動生成するAutoInsert
+		if err := handlers.AutoInsert(); err != nil {
+			fmt.Println(err)
+			fmt.Println("処理を続行します")
+		}
+	}
 
 	// 各テーブルのチェック
 

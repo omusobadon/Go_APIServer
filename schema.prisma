@@ -25,7 +25,7 @@ model Shop {
 model ProductGroup {
   id Int @id @default(autoincrement())
   shop_id Int
-  name String @unique
+  name String
   start_before String @default("1d")
   available_duration String @default("3d")
   unit_time String?
@@ -34,14 +34,16 @@ model ProductGroup {
 
   shop Shop @relation(fields: [shop_id], references: [id])
   product Product[]
-  time Time[]
+  duration Duration[]
+
+  @@unique([shop_id, name])
 }
 
 // Product(商品)テーブル
 model Product {
   id Int @id @default(autoincrement())
   group_id Int
-  name String @unique
+  name String
   max_people Int
   quantity Int?
   remark String?
@@ -49,10 +51,12 @@ model Product {
   group ProductGroup @relation(fields: [group_id], references: [id])
   price Price[]
   seat Seat[]
+
+  @@unique([group_id, name])
 }
 
-// Time(時間)テーブル
-model Time {
+// Duration(期間)テーブル
+model Duration {
   id Int @id @default(autoincrement())
   group_id Int
   name String
@@ -61,6 +65,8 @@ model Time {
 
   group ProductGroup @relation(fields: [group_id], references: [id])
   stock Stock?
+
+  @@unique([group_id, name])
 }
 
 // Price(値段)テーブル
@@ -74,6 +80,8 @@ model Price {
 
   product Product @relation(fields: [product_id], references: [id])
   stock Stock[]
+
+  @@unique([product_id, name])
 }
 
 // Seat(座席)テーブル
@@ -88,20 +96,24 @@ model Seat {
 
   product Product @relation(fields: [product_id], references: [id])
   order_detail OrderDetail[]
+
+  @@unique([product_id, row, name])
 }
 
 // Stock(在庫)テーブル
 
 model Stock {
   id Int @id @default(autoincrement())
-  time_id Int? @unique
+  duration_id Int? @unique
   price_id Int
   quantity Int?
   is_enable Boolean @default(false)
 
-  time Time? @relation(fields: [time_id], references: [id])
+  duration Duration? @relation(fields: [duration_id], references: [id])
   price Price @relation(fields: [price_id], references: [id])
   order_detail OrderDetail[]
+
+  @@unique([duration_id, price_id])
 }
 
 // Customer(顧客情報)テーブル
