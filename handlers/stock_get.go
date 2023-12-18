@@ -10,25 +10,25 @@ import (
 )
 
 // レスポンスに変換する構造体
-type GetResponseBody struct {
+type StockGetResponseBody struct {
 	Message string          `json:"message"`
 	Stock   []db.StockModel `json:"stock"`
 }
 
-var get_cnt int // orderGETのカウント用
+var stock_get_cnt int // orderGETのカウント用
 
-func OrderGet(w http.ResponseWriter, r *http.Request) {
+func StockGet(w http.ResponseWriter, r *http.Request) {
 	var stock []db.StockModel
 	var status int
 	var message string
-	get_cnt++
+	stock_get_cnt++
 
-	fmt.Printf("* Get No.%d *\n", get_cnt)
+	fmt.Printf("* Stock Get No.%d *\n", stock_get_cnt)
 
 	// リクエスト処理後のレスポンス処理
 	defer func() {
 		// レスポンスボディの作成
-		res := GetResponseBody{
+		res := StockGetResponseBody{
 			Message: message,
 			Stock:   stock,
 		}
@@ -50,7 +50,7 @@ func OrderGet(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("[%d] %s\n", status, message)
 		}
 
-		fmt.Printf("* Get No.%d End *\n", get_cnt)
+		fmt.Printf("* Stock Get No.%d End *\n", stock_get_cnt)
 	}()
 
 	// データベース接続用クライアントの作成
@@ -70,7 +70,15 @@ func OrderGet(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	// Stockテーブルの内容を一括取得
-	stock, err := client.Stock.FindMany().Exec(ctx)
+	stock, err := client.Stock.FindMany().With(
+		db.Stock.Price.Fetch().With(
+			db.Price.Product.Fetch().With(
+				db.Product.Group.Fetch(),
+			),
+		),
+	).With(
+		db.Stock.Time.Fetch(),
+	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
 		message = fmt.Sprint("在庫テーブル取得エラー : ", err)

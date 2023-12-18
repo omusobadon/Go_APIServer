@@ -44,14 +44,11 @@ model Product {
   name String @unique
   max_people Int
   quantity Int?
-  value Int?
-  tax Int?
   remark String?
 
   group ProductGroup @relation(fields: [group_id], references: [id])
-  stock Stock[]
+  price Price[]
   seat Seat[]
-  special_price SpecialPrice[]
 }
 
 // Time(時間)テーブル
@@ -66,24 +63,24 @@ model Time {
   stock Stock?
 }
 
-// Stock(在庫)テーブル
-model Stock {
+// Price(値段)テーブル
+model Price {
   id Int @id @default(autoincrement())
-  time_id Int? @unique
   product_id Int
-  quantity Int?
-  is_enable Boolean @default(false)
-  is_special_enable Boolean @default(false)
+  name String
+  value Int
+  tax Int
+  remark String?
 
-  time Time? @relation(fields: [time_id], references: [id])
   product Product @relation(fields: [product_id], references: [id])
-  order_detail OrderDetail[]
+  stock Stock[]
 }
 
 // Seat(座席)テーブル
 model Seat {
   id Int @id @default(autoincrement())
   product_id Int
+  row String
   name String
   is_reserved Boolean @default(false)
   is_enable Boolean @default(false)
@@ -93,14 +90,17 @@ model Seat {
   order_detail OrderDetail[]
 }
 
-model SpecialPrice {
-  id Int @id @default(autoincrement())
-  product_id Int
-  name String
-  value Int
-  remark String?
+// Stock(在庫)テーブル
 
-  product Product @relation(fields: [product_id], references: [id])
+model Stock {
+  id Int @id @default(autoincrement())
+  time_id Int? @unique
+  price_id Int
+  quantity Int?
+  is_enable Boolean @default(false)
+
+  time Time? @relation(fields: [time_id], references: [id])
+  price Price @relation(fields: [price_id], references: [id])
   order_detail OrderDetail[]
 }
 
@@ -139,13 +139,11 @@ model OrderDetail {
   order_id Int
   stock_id Int
   seat_id Int?
-  special_price_id Int?
   quantity Int?
 
   order Order @relation(fields: [order_id], references: [id])
   stock Stock @relation(fields: [stock_id], references: [id])
   seat Seat? @relation(fields: [seat_id], references: [id])
-  special_price SpecialPrice? @relation(fields: [special_price_id], references: [id])
 }
 
 // PaymentState(決済状態)テーブル
