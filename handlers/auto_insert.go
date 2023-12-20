@@ -16,10 +16,10 @@ const product_type string = "Car"
 const (
 	shop_num    int = 3  // 店舗
 	pgroup_num  int = 10 // 商品グループ
-	product_num int = 3 // 商品
+	product_num int = 3  // 商品
 	price_num   int = 3  // 価格
 	seat_num    int = 40 // 座席
-	stock_num   int = 10 // 在庫　時間テーブルも同一
+	stock_num   int = 10 // 在庫
 )
 
 // 商品・在庫テーブルが空か判定し、空の場合は自動生成
@@ -27,7 +27,6 @@ func AutoInsert() error {
 	var shop []db.ShopModel
 	var pgroup []db.ProductGroupModel
 	// var product []db.ProductModel
-	var duration []db.DurationModel
 	// var price []db.PriceModel
 	// var seat []db.SeatModel
 	// var stock []db.StockModel
@@ -136,18 +135,6 @@ func AutoInsert() error {
 	}
 
 	fmt.Printf("商品グループが%d件見つかりました。\n", len(pgroup))
-
-	// 期間テーブルの取得
-	duration, err = client.Duration.FindMany().Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("DurationGetErr : %w", err)
-	}
-
-	if len(duration) == 0 {
-		fmt.Print("期間テーブルにインサート...")
-
-		for 
-	}
 
 	// // 在庫テーブルの取得
 	// stock, err := client.Stock.FindMany().Exec(ctx)

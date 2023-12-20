@@ -76,8 +76,6 @@ func StockGet(w http.ResponseWriter, r *http.Request) {
 				db.Product.Group.Fetch(),
 			),
 		),
-	).With(
-		db.Stock.Time.Fetch(),
 	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
