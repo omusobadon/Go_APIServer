@@ -17,29 +17,41 @@
     go run github.com/steebchen/prisma-client-go db push
 ```
 
+## 予約プリセット一覧
+以下の3つのプリセットがある。
+プリセットを適用しない場合は0を設定
+
+### レンタカーモード
+- 予約期間：自由
+- 
+
+### 来店予約モード
+- 予約期間：
+-
+
+### 座席指定モード
+- 予約期間：固定
+-
+
+## パラメータ一覧と
+- Reserv_free = 
+
+予約期間の固定
+営業時間の考慮
+座席指定の有無
+ユーザが終了処理を行う必要の有無
+
+
 ## ファイル一覧
-- db/           prisma-client-goが作成したフォルダ。DB操作用のパッケージ等
-- handlers/     api_serverから呼び出されるハンドラ群
-- api_server    APIServerの本体
-- get_time      NTP時刻取得処理
-- schema        prismaの設定ファイル。DBのURLやテーブルの定義など
+- db/             prisma-client-goが作成したフォルダ。DB操作用のパッケージ等
+- Go_APIServer    APIServerの本体
+- GetTime         時刻同期処理
+- schema          prismaの設定ファイル。DBのURLやテーブルの定義など
+- TableEditer     APIServerから実行されるテーブル編集用のメソッド群
+- TableMemo       作成するテーブルのメモ
+- Tables          各テーブル用の構造体のまとめ
+- test            テスト用
 
-
-## GET
-### 指定したテーブルをGET
-- Shop :        /get_shop
-- ProductGroup :/get_group
-- Product :     /get_product
-- Price :       /get_price
-- Seat :        /get_seat
-- Stock :       /get_stock
-
-### リクエストパラメータ
-- 各テーブルについて、1つ前のテーブルIDを使用して絞り込み
-- パラメータを設定しない場合は全取得するように変更
-
-- 例）/get_group?id=1　→　ProductGroupテーブルの"shop_id=1"の情報を取得
-- 例）/get_group　→　ProductGroupテーブルを全取得
 
 ## POST /post
 - POSTされた注文情報を取得して注文処理
