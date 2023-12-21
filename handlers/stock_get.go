@@ -36,7 +36,6 @@ func StockGet(w http.ResponseWriter, r *http.Request) {
 		// レスポンスをJSON形式で返す
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
 			status = http.StatusInternalServerError
@@ -79,7 +78,7 @@ func StockGet(w http.ResponseWriter, r *http.Request) {
 	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("在庫テーブル取得エラー : ", err)
+		message = fmt.Sprint("在庫取得エラー : ", err)
 		return
 	}
 

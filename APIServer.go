@@ -30,6 +30,7 @@ func APIServer() error {
 	// 各ハンドラの呼び出し
 	http.HandleFunc("/shop_get", handlers.ShopGet)
 	http.HandleFunc("/stock_get", handlers.StockGet)
+	http.HandleFunc("/seat_get", handlers.SeatGet)
 	// http.HandleFunc("/order_post", handlers.OrderPost)
 	// http.HandleFunc("/order_change", handlers.OrderChange)
 	// http.HandleFunc("/manage_get", handlers.ManageGet)

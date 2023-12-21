@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"Go_APIServer/db"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -9,9 +10,34 @@ import (
 var cnt int
 
 func Test(w http.ResponseWriter, r *http.Request) {
+	var status int = 200
+	var message string = "test"
+	var test string
 	cnt++
 
 	fmt.Printf("! Test No.%d !\n", cnt)
+
+	// リクエスト処理後のレスポンス作成
+	defer func() {
+
+		// レスポンスをJSON形式で返す
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		if err := json.NewEncoder(w).Encode(test); err != nil {
+			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+			status = http.StatusInternalServerError
+			message = fmt.Sprint("レスポンスの作成エラー : ", err)
+		}
+
+		// 処理結果メッセージの表示（サーバ側）
+		if status == 0 || message == "" {
+			fmt.Println("ステータスコードまたはメッセージがありません")
+		} else {
+			fmt.Printf("[%d] %s\n", status, message)
+		}
+
+		fmt.Printf("! Test No.%d End !\n", cnt)
+	}()
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -29,20 +55,5 @@ func Test(w http.ResponseWriter, r *http.Request) {
 
 	// ctx := context.Background()
 
-	// test, err := client.Stock.FindMany().With(db.Stock.Product.Fetch().With(db.Product.Group.Fetch().With(db.ProductGroup.Shop.Fetch()))).With(db.Stock.Time.Fetch()).Exec(ctx)
-	// if err != nil {
-	// 	fmt.Println("エラー :", err)
-	// }
-
-	// fmt.Println(test)
-
-	// // レスポンスをJSON形式で返す
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
-
-	// if err := json.NewEncoder(w).Encode(test); err != nil {
-	// 	http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-	// }
-
-	fmt.Printf("! Test No.%d End !\n", cnt)
+	test = r.FormValue("test")
 }
