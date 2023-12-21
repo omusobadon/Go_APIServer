@@ -4,8 +4,8 @@
     git clone https://github.com/omusobadon/Go_APIServer.git
 ```
 ### 2. 環境変数ファイルの作成
-    DBのURLを記述した環境変数ファイル(.env)を"Go_APIServer/"へコピー
-    記述例）DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@[URL]/postgres
+- DBのURLを記述した環境変数ファイル(.env)を"Go_APIServer/"へコピー
+- 記述例）DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@[URL]/postgres
 
 ### 3. Prisma-Client-Goのインストール
 ```shell
@@ -26,7 +26,7 @@
 
 
 ## GET
-### 指定したテーブルをGET
+### 各テーブルのGET
 - Shop :        /get_shop
 - ProductGroup :/get_group
 - Product :     /get_product
@@ -36,7 +36,7 @@
 
 ### リクエストパラメータ
 - 各テーブルについて、1つ前のテーブルIDを使用して絞り込み
-- パラメータを設定しない場合は全取得するように変更
+- パラメータを設定しない場合は全取得する
 
 - 例）/get_group?id=1　→　ProductGroupテーブルの"shop_id=1"の情報を取得
 - 例）/get_group　→　ProductGroupテーブルを全取得
