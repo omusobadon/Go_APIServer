@@ -44,7 +44,7 @@ model Product {
   group_id Int
   name String
   max_people Int
-  quantity Int?
+  qty Int?
   remark String?
 
   group ProductGroup @relation(fields: [group_id], references: [id])
@@ -74,7 +74,7 @@ model Seat {
   id Int @id @default(autoincrement())
   product_id Int
   row String
-  name String
+  column String
   is_reserved Boolean @default(false)
   is_enable Boolean @default(false)
   remark String?
@@ -82,7 +82,7 @@ model Seat {
   product Product @relation(fields: [product_id], references: [id])
   order_detail OrderDetail[]
 
-  @@unique([product_id, row, name])
+  @@unique([product_id, row, column])
 }
 
 // Stock(在庫)テーブル
@@ -91,7 +91,7 @@ model Stock {
   id Int @id @default(autoincrement())
   price_id Int
   name String
-  quantity Int?
+  qty Int?
   start_at DateTime? @db.Timestamptz(0)
   end_at DateTime? @db.Timestamptz(0)
   is_enable Boolean @default(false)
@@ -126,7 +126,7 @@ model Order {
   remark String?
 
   customer Customer @relation(fields: [customer_id], references: [id])
-  payment_state PaymentState?
+  payment_state PaymentState[]
   reservation_cancel ReservationCancel?
   reservation_end ReservationEnd?
   order_detail OrderDetail[]
@@ -137,7 +137,7 @@ model OrderDetail {
   order_id Int
   stock_id Int
   seat_id Int?
-  quantity Int?
+  qty Int?
 
   order Order @relation(fields: [order_id], references: [id])
   stock Stock @relation(fields: [stock_id], references: [id])
@@ -147,10 +147,10 @@ model OrderDetail {
 // PaymentState(決済状態)テーブル
 model PaymentState {
   id Int @id @default(autoincrement())
-  order_id Int @unique
+  order_id Int
   is_accepted Boolean
   message String
-  updated_at DateTime @db.Timestamptz(3) @updatedAt @default(now())
+  created_at DateTime @db.Timestamptz(3) @default(now())
 
   order Order @relation(fields: [order_id], references: [id])
 }

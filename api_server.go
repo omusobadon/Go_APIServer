@@ -14,19 +14,19 @@ const (
 	auto_insert bool = true
 )
 
-// サーバ定義
-var server = &http.Server{
-	Addr:           ":8080",
-	ReadTimeout:    10 * time.Second,
-	WriteTimeout:   10 * time.Second,
-	MaxHeaderBytes: 1 << 20,
-}
-
 func APIServer() error {
+
+	// サーバ定義
+	var server = &http.Server{
+		Addr:           ":8080",
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
 
 	// テーブルに情報がない場合に自動インサート（テスト用）
 	if auto_insert {
-		if err := handlers.AutoInsert(); err != nil {
+		if err := AutoInsert(); err != nil {
 			fmt.Println(err)
 			fmt.Println("処理を続行します")
 		}
