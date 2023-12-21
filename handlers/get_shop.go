@@ -19,10 +19,12 @@ type GetShopResponseBody struct {
 var get_shop_cnt int // GetShopの呼び出しカウント
 
 func GetShop(w http.ResponseWriter, r *http.Request) {
-	var shop []db.ShopModel
-	var status int
-	var message string
 	get_shop_cnt++
+	var (
+		shop    []db.ShopModel
+		status  int
+		message string
+	)
 
 	fmt.Printf("* Get Shop No.%d *\n", get_shop_cnt)
 

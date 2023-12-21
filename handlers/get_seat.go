@@ -20,10 +20,13 @@ type GetSeatResponseBody struct {
 var get_seat_cnt int // ShopGetの呼び出しカウント
 
 func GetSeat(w http.ResponseWriter, r *http.Request) {
-	var seat []db.SeatModel
-	var status int
-	var message string
 	get_seat_cnt++
+	var (
+		seat    []db.SeatModel
+		status  int
+		message string
+		err     error
+	)
 
 	fmt.Printf("* Get Seat No.%d *\n", get_seat_cnt)
 
@@ -54,12 +57,18 @@ func GetSeat(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("* Get Seat No.%d End *\n", get_seat_cnt)
 	}()
 
-	// リクエストパラメータの処理
-	product_id, err := strconv.Atoi(r.FormValue("product"))
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("不正なパラメータ : ", err)
-		return
+	// リクエストパラメータの取得
+	product_str := r.FormValue("id")
+
+	// パラメータが空でない場合はIntに変換
+	var product_id int
+	if product_str != "" {
+		product_id, err = strconv.Atoi(product_str)
+		if err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("不正なパラメータ : ", err)
+			return
+		}
 	}
 
 	// データベース接続用クライアントの作成

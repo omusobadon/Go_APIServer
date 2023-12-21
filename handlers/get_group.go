@@ -20,10 +20,13 @@ type GetGroupResponseBody struct {
 var get_group_cnt int // ShopGetの呼び出しカウント
 
 func GetGroup(w http.ResponseWriter, r *http.Request) {
-	var group []db.ProductGroupModel
-	var status int
-	var message string
 	get_group_cnt++
+	var (
+		group   []db.ProductGroupModel
+		status  int
+		message string
+		err     error
+	)
 
 	fmt.Printf("* Get Group No.%d *\n", get_group_cnt)
 
@@ -55,12 +58,18 @@ func GetGroup(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("* Get Group No.%d End *\n", get_group_cnt)
 	}()
 
-	// リクエストパラメータの処理
-	shop_id, err := strconv.Atoi(r.FormValue("shop"))
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("不正なパラメータ : ", err)
-		return
+	// リクエストパラメータの取得
+	shop_str := r.FormValue("id")
+
+	// パラメータが空でない場合はIntに変換
+	var shop_id int
+	if shop_str != "" {
+		shop_id, err = strconv.Atoi(shop_str)
+		if err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("不正なパラメータ : ", err)
+			return
+		}
 	}
 
 	// データベース接続用クライアントの作成

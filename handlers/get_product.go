@@ -20,10 +20,13 @@ type GetProductResponseBody struct {
 var get_product_cnt int // GetProductの呼び出しカウント
 
 func GetProduct(w http.ResponseWriter, r *http.Request) {
-	var product []db.ProductModel
-	var status int
-	var message string
 	get_product_cnt++
+	var (
+		product []db.ProductModel
+		status  int
+		message string
+		err     error
+	)
 
 	fmt.Printf("* Get Product No.%d *\n", get_product_cnt)
 
@@ -55,12 +58,18 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("* Get Product No.%d End *\n", get_product_cnt)
 	}()
 
-	// リクエストパラメータの処理
-	group_id, err := strconv.Atoi(r.FormValue("group"))
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("不正なパラメータ : ", err)
-		return
+	// リクエストパラメータの取得
+	group_str := r.FormValue("id")
+
+	// パラメータが空でない場合はIntに変換
+	var group_id int
+	if group_str != "" {
+		group_id, err = strconv.Atoi(group_str)
+		if err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("不正なパラメータ : ", err)
+			return
+		}
 	}
 
 	// データベース接続用クライアントの作成

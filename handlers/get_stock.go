@@ -20,10 +20,13 @@ type GetStockResponseBody struct {
 var get_stock_cnt int // orderGETのカウント用
 
 func GetStock(w http.ResponseWriter, r *http.Request) {
-	var stock []db.StockModel
-	var status int
-	var message string
 	get_stock_cnt++
+	var (
+		stock   []db.StockModel
+		status  int
+		message string
+		err     error
+	)
 
 	fmt.Printf("* Get Stock No.%d *\n", get_stock_cnt)
 
@@ -55,12 +58,18 @@ func GetStock(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("* Get Stock No.%d End *\n", get_stock_cnt)
 	}()
 
-	// リクエストパラメータの処理
-	price_id, err := strconv.Atoi(r.FormValue("price"))
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("不正なパラメータ : ", err)
-		return
+	// リクエストパラメータの取得
+	price_str := r.FormValue("id")
+
+	// パラメータが空でない場合はIntに変換
+	var price_id int
+	if price_str != "" {
+		price_id, err = strconv.Atoi(price_str)
+		if err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("不正なパラメータ : ", err)
+			return
+		}
 	}
 
 	// データベース接続用クライアントの作成
