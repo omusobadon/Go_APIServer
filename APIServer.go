@@ -4,6 +4,7 @@ import (
 	"Go_APIServer/handlers"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 const (
@@ -13,10 +14,18 @@ const (
 	auto_insert bool = true
 )
 
+// サーバ定義
+var server = &http.Server{
+	Addr:           ":8080",
+	ReadTimeout:    10 * time.Second,
+	WriteTimeout:   10 * time.Second,
+	MaxHeaderBytes: 1 << 20,
+}
+
 func APIServer() error {
 
+	// テーブルに情報がない場合に自動インサート（テスト用）
 	if auto_insert {
-		// 商品・在庫テーブルが空の場合は自動生成するAutoInsert
 		if err := handlers.AutoInsert(); err != nil {
 			fmt.Println(err)
 			fmt.Println("処理を続行します")
@@ -24,21 +33,25 @@ func APIServer() error {
 	}
 
 	// 各テーブルのチェック
+	// 未実装
 
 	fmt.Println("Server started!")
 
 	// 各ハンドラの呼び出し
-	http.HandleFunc("/shop_get", handlers.ShopGet)
-	http.HandleFunc("/stock_get", handlers.StockGet)
-	http.HandleFunc("/seat_get", handlers.SeatGet)
+	http.HandleFunc("/get_shop", handlers.GetShop)
+	http.HandleFunc("/get_group", handlers.GetGroup)
+	http.HandleFunc("/get_product", handlers.GetProduct)
+	http.HandleFunc("/get_price", handlers.GetPrice)
+	http.HandleFunc("/get_seat", handlers.GetSeat)
+	http.HandleFunc("/get_stock", handlers.GetStock)
 	// http.HandleFunc("/order_post", handlers.OrderPost)
 	// http.HandleFunc("/order_change", handlers.OrderChange)
 	// http.HandleFunc("/manage_get", handlers.ManageGet)
 	// http.HandleFunc("/manage_post", handlers.ManagePost)
 	http.HandleFunc("/test", handlers.Test)
 
-	// サーバの起動(TCPアドレス, http.Handler)
-	http.ListenAndServe(":8080", nil)
+	// サーバの起動
+	server.ListenAndServe()
 
 	return nil
 }

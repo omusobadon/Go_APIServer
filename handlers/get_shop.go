@@ -1,4 +1,4 @@
-// 座席情報のGET
+// 店舗情報のGET
 package handlers
 
 import (
@@ -10,27 +10,29 @@ import (
 )
 
 // レスポンスに変換する構造体
-type SeatGetResponseBody struct {
+type GetShopResponseBody struct {
 	Message string         `json:"message"`
-	Seat    []db.SeatModel `json:"seat"`
+	Length  int            `json:"length"`
+	Shop    []db.ShopModel `json:"shop"`
 }
 
-var seat_get_cnt int // ShopGetの呼び出しカウント
+var get_shop_cnt int // GetShopの呼び出しカウント
 
-func SeatGet(w http.ResponseWriter, r *http.Request) {
-	var seat []db.SeatModel
+func GetShop(w http.ResponseWriter, r *http.Request) {
+	var shop []db.ShopModel
 	var status int
 	var message string
-	seat_get_cnt++
+	get_shop_cnt++
 
-	fmt.Printf("* Seat Get No.%d *\n", seat_get_cnt)
+	fmt.Printf("* Get Shop No.%d *\n", get_shop_cnt)
 
 	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
-		res := SeatGetResponseBody{
+		res := GetShopResponseBody{
 			Message: message,
-			Seat:    seat,
+			Length:  len(shop),
+			Shop:    shop,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -49,7 +51,7 @@ func SeatGet(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("[%d] %s\n", status, message)
 		}
 
-		fmt.Printf("* Seat Get No.%d End *\n", seat_get_cnt)
+		fmt.Printf("* Get Shop No.%d End *\n", get_shop_cnt)
 	}()
 
 	// データベース接続用クライアントの作成
@@ -69,10 +71,10 @@ func SeatGet(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	// Shopテーブルの内容を一括取得
-	seat, err := client.Seat.FindMany().Exec(ctx)
+	shop, err := client.Shop.FindMany().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("座席テーブル取得エラー : ", err)
+		message = fmt.Sprint("店舗テーブル取得エラー : ", err)
 		return
 	}
 

@@ -1,4 +1,4 @@
-// 店舗情報のGET
+// 商品情報のGET
 package handlers
 
 import (
@@ -7,30 +7,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 // レスポンスに変換する構造体
-type ShopGetResponseBody struct {
-	Message string         `json:"message"`
-	Shop    []db.ShopModel `json:"shop"`
+type GetProductResponseBody struct {
+	Message string
+	Length  int
+	Product []db.ProductModel
 }
 
-var shop_get_cnt int // ShopGetの呼び出しカウント
+var get_product_cnt int // GetProductの呼び出しカウント
 
-func ShopGet(w http.ResponseWriter, r *http.Request) {
-	var shop []db.ShopModel
+func GetProduct(w http.ResponseWriter, r *http.Request) {
+	var product []db.ProductModel
 	var status int
 	var message string
-	shop_get_cnt++
+	get_product_cnt++
 
-	fmt.Printf("* Shop Get No.%d *\n", shop_get_cnt)
+	fmt.Printf("* Get Product No.%d *\n", get_product_cnt)
 
 	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
-		res := ShopGetResponseBody{
+		res := GetProductResponseBody{
 			Message: message,
-			Shop:    shop,
+			Length:  len(product),
+			Product: product,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -49,8 +52,16 @@ func ShopGet(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("[%d] %s\n", status, message)
 		}
 
-		fmt.Printf("* Shop Get No.%d End *\n", shop_get_cnt)
+		fmt.Printf("* Get Product No.%d End *\n", get_product_cnt)
 	}()
+
+	// リクエストパラメータの処理
+	group_id, err := strconv.Atoi(r.FormValue("group"))
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("不正なパラメータ : ", err)
+		return
+	}
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -68,11 +79,26 @@ func ShopGet(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Shopテーブルの内容を一括取得
-	shop, err := client.Shop.FindMany().Exec(ctx)
+	// groupパラメータが"0"のときテーブルの内容を一括取得
+	// "0"以外のときはパラメータで指定した情報を取得
+	if group_id == 0 {
+		product, err = client.Product.FindMany().Exec(ctx)
+
+	} else {
+		product, err = client.Product.FindMany(
+			db.Product.GroupID.Equals(group_id),
+		).Exec(ctx)
+	}
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("店舗テーブル取得エラー : ", err)
+		message = fmt.Sprint("商品グループテーブル取得エラー : ", err)
+		return
+	}
+
+	// 取得した情報がないとき
+	if len(product) == 0 {
+		status = http.StatusBadRequest
+		message = "商品グループ情報がありません"
 		return
 	}
 

@@ -1,4 +1,4 @@
-// 在庫情報のGET
+// 商品グループ情報のGET
 package handlers
 
 import (
@@ -7,30 +7,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 // レスポンスに変換する構造体
-type StockGetResponseBody struct {
-	Message string          `json:"message"`
-	Stock   []db.StockModel `json:"stock"`
+type GetGroupResponseBody struct {
+	Message string                 `json:"message"`
+	Length  int                    `json:"length"`
+	Group   []db.ProductGroupModel `json:"group"`
 }
 
-var stock_get_cnt int // orderGETのカウント用
+var get_group_cnt int // ShopGetの呼び出しカウント
 
-func StockGet(w http.ResponseWriter, r *http.Request) {
-	var stock []db.StockModel
+func GetGroup(w http.ResponseWriter, r *http.Request) {
+	var group []db.ProductGroupModel
 	var status int
 	var message string
-	stock_get_cnt++
+	get_group_cnt++
 
-	fmt.Printf("* Stock Get No.%d *\n", stock_get_cnt)
+	fmt.Printf("* Get Group No.%d *\n", get_group_cnt)
 
-	// リクエスト処理後のレスポンス処理
+	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
-		res := StockGetResponseBody{
+		res := GetGroupResponseBody{
 			Message: message,
-			Stock:   stock,
+			Length:  len(group),
+			Group:   group,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -49,8 +52,16 @@ func StockGet(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("[%d] %s\n", status, message)
 		}
 
-		fmt.Printf("* Stock Get No.%d End *\n", stock_get_cnt)
+		fmt.Printf("* Get Group No.%d End *\n", get_group_cnt)
 	}()
+
+	// リクエストパラメータの処理
+	shop_id, err := strconv.Atoi(r.FormValue("shop"))
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("不正なパラメータ : ", err)
+		return
+	}
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -68,17 +79,26 @@ func StockGet(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Stockテーブルの内容を一括取得
-	stock, err := client.Stock.FindMany().With(
-		db.Stock.Price.Fetch().With(
-			db.Price.Product.Fetch().With(
-				db.Product.Group.Fetch(),
-			),
-		),
-	).Exec(ctx)
+	// shopパラメータが"0"のときテーブルの内容を一括取得
+	// "0"以外のときはパラメータで指定した情報を取得
+	if shop_id == 0 {
+		group, err = client.ProductGroup.FindMany().Exec(ctx)
+
+	} else {
+		group, err = client.ProductGroup.FindMany(
+			db.ProductGroup.ShopID.Equals(shop_id),
+		).Exec(ctx)
+	}
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("在庫取得エラー : ", err)
+		message = fmt.Sprint("商品グループテーブル取得エラー : ", err)
+		return
+	}
+
+	// 取得した情報がないとき
+	if len(group) == 0 {
+		status = http.StatusBadRequest
+		message = "商品グループ情報がありません"
 		return
 	}
 
