@@ -59,7 +59,7 @@ func GetStock(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// リクエストパラメータの取得
-	price_str := r.FormValue("id")
+	price_str := r.FormValue("price_id")
 
 	// パラメータが空でない場合はIntに変換
 	var price_id int

@@ -59,7 +59,7 @@ func GetGroup(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// リクエストパラメータの取得
-	shop_str := r.FormValue("id")
+	shop_str := r.FormValue("shop_id")
 
 	// パラメータが空でない場合はIntに変換
 	var shop_id int

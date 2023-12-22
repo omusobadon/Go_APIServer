@@ -59,7 +59,7 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// リクエストパラメータの取得
-	group_str := r.FormValue("id")
+	group_str := r.FormValue("group_id")
 
 	// パラメータが空でない場合はIntに変換
 	var group_id int

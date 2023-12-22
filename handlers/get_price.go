@@ -59,7 +59,7 @@ func GetPrice(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// リクエストパラメータの取得
-	product_str := r.FormValue("id")
+	product_str := r.FormValue("product_id")
 
 	// パラメータが空でない場合はIntに変換
 	var product_id int

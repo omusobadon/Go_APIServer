@@ -47,11 +47,14 @@
 - json形式
 ```json
 {
-    "customer": 1,
-    "product": 1,
-    "start": "2023-11-10T10:10:00+09:00",
-    "end": "2023-11-10T18:10:00+09:00",
-    "num": 1
+    "customer_id": 1,
+    "stock_id": 1,
+    "seat_id": 1,
+    "qty": 5,
+    "start_at": "2023-11-10T10:10:00+09:00",
+    "end_at": "2023-11-10T18:10:00+09:00",
+    "number_people": 1,
+    "remark": "test"
 }
 ```
 

@@ -8,6 +8,9 @@ import (
 )
 
 const (
+	// time_free_enable bool = true
+	// Seat_enable      bool = false
+
 	// timezone =
 
 	// 商品・在庫テーブルが空の場合、自動生成するかどうか
@@ -38,13 +41,17 @@ func APIServer() error {
 	fmt.Println("Server started!")
 
 	// 各ハンドラの呼び出し
+	// GET
 	http.HandleFunc("/get_shop", handlers.GetShop)
 	http.HandleFunc("/get_group", handlers.GetGroup)
 	http.HandleFunc("/get_product", handlers.GetProduct)
 	http.HandleFunc("/get_price", handlers.GetPrice)
 	http.HandleFunc("/get_seat", handlers.GetSeat)
 	http.HandleFunc("/get_stock", handlers.GetStock)
-	// http.HandleFunc("/order_post", handlers.OrderPost)
+
+	// POST
+	http.HandleFunc("/post_order", handlers.PostOrder)
+
 	// http.HandleFunc("/order_change", handlers.OrderChange)
 	// http.HandleFunc("/manage_get", handlers.ManageGet)
 	// http.HandleFunc("/manage_post", handlers.ManagePost)
