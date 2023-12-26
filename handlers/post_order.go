@@ -48,8 +48,9 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		// order   Order
 		status  int
 		message string
+		err     error
 
-		stock db.StockModel
+		stock *db.StockModel
 	)
 
 	fmt.Printf("*** Post Order No.%d ***\n", post_order_cnt)
@@ -64,7 +65,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 		res := TestRes{
 			Message: message,
-			Stock:   stock,
+			Stock:   *stock,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -121,6 +122,51 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
+	// 注文情報の在庫IDと一致する情報を取得
+	stock, err = client.Stock.FindUnique(
+		db.Stock.ID.Equals(req.Stock)).With(
+		db.Stock.Price.Fetch().With(
+			db.Price.Product.Fetch().With(
+				db.Product.Group.Fetch(),
+			),
+		),
+	).Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("在庫テーブル取得エラー : ", err)
+		return
+	}
+
+	// 現在時刻の取得
+	now := time.Now()
+
+	// 予約開始時刻の計算
+	start_dur, err := time.ParseDuration(
+		stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.StartBefore,
+	)
+	start := now.Add(start_dur)
+
+	// 予約可能期間の計算
+	available_dur, err := time.ParseDuration(
+		stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.AvailableDuration,
+	)
+	duration := start.Add(available_dur)
+
+	if err != nil {
+		status = http.StatusInternalServerError
+		message = fmt.Sprint("時刻解析エラー : ", err)
+		return
+	}
+
+	fmt.Println(start, duration)
+
+	// 在庫状態が有効かチェック
+	if !stock.IsEnable {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("無効な在庫 : ", err)
+		return
+	}
+
 	if time_free_enable {
 		// 予約開始時刻が終了時刻より後でないかチェック
 		if i := req.End.Sub(req.Start); i <= 0 {
@@ -129,30 +175,9 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// 注文情報の在庫IDと一致する情報を取得
-		stock, err := client.Stock.FindUnique(
-			db.Stock.ID.Equals(req.Stock)).With(
-			db.Stock.Price.Fetch().With(
-				db.Price.Product.Fetch().With(
-					db.Product.Group.Fetch(),
-				),
-			),
-		).Exec(ctx)
-		if err != nil {
-			status = http.StatusBadRequest
-			message = fmt.Sprint("在庫テーブル取得エラー : ", err)
-			return
-		}
-
-		// 在庫状態が有効かチェック
-		if !stock.IsEnable {
-			status = http.StatusBadRequest
-			message = fmt.Sprint("無効な在庫 : ", err)
-			return
-		}
+		//
 
 		fmt.Println("有効")
-
 		// // 在庫が注文数を上回っているかチェック
 
 		// if qty, _ := stock.Qty(); qty >= order.Num {

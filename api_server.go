@@ -10,6 +10,8 @@ import (
 const (
 	// time_free_enable bool = true
 	// Seat_enable      bool = false
+	// user_end_enable bool = false
+	// user_notification bool = false
 
 	// timezone =
 
