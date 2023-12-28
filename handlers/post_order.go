@@ -280,9 +280,6 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		detail = append(detail, *d)
 	}
 
-	fmt.Println(order)
-	fmt.Println(detail)
-
 	status = http.StatusOK
 	message = "正常終了"
 }
