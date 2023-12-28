@@ -38,26 +38,16 @@
 　このPOSTを受け取り注文処理が行われる
 
 ### 車の予約注文をPOSTする際のJSONパラメータ
-- customer_id   : Customer（顧客情報）テーブルID
-- start_at      : 予約開始時刻
-- end_at        : 予約終了時刻
-- remark        : 備考
-- detail        : 注文詳細情報
-- stock_id      : Stock（在庫情報）テーブルID
-- qty           : 数量
-
-
-- json記述例
 ```json
 {
-    "customer_id": 1,
-    "start_at": "2023-12-30T18:10:00+09:00",
-    "end_at": "2023-12-30T18:10:00+09:00",
-    "remark": "test",
-    "detail": [
+    "customer_id": 1, // Customer（顧客情報）テーブルID
+    "start_at": "2023-12-30T18:10:00+09:00", // 予約開始時刻
+    "end_at": "2023-12-30T18:10:00+09:00", // 予約終了時刻
+    "remark": "test", // 備考
+    "detail": [ // 注文詳細情報（配列）
         {
-        "stock_id": 1,
-        "qty": 1
+        "stock_id": 1, // Stock（在庫情報）テーブルID
+        "qty": 1 // 数量
         }
     ]
 }
@@ -68,15 +58,10 @@
 　以下それぞれの場合のJSONパラメータとその例
 
 #### 【成功時】
-- message       : メッセージ（正常終了など）
-- request       : POSTされた情報そのまま
-- order         : Order（注文情報）テーブルに登録された情報
-- order_detail  : OrderDetail（注文詳細）テーブルに登録された情報
-
 ```json
 {
-    "message": "正常終了",
-    "request": {
+    "message": "正常終了", // メッセージ（正常終了など）
+    "request": { // POSTされた情報そのまま
         "customer_id": 1,
         "start_at": "2023-12-30T18:10:00+09:00",
         "end_at": "2023-12-30T18:10:00+09:00",
@@ -90,7 +75,7 @@
             }
         ]
     },
-    "order": {
+    "order": { // Order（注文情報）テーブルに登録された情報
         "id": 15, // 注文番号
         "customer_id": 1,
         "start_at": "2023-12-30T09:10:00Z",
@@ -100,7 +85,7 @@
         "created_at": "2023-12-28T08:40:28.848Z", // 注文登録日時
         "remark": "test"
     },
-    "order_detail": [
+    "order_detail": [ // OrderDetail（注文詳細）テーブルに登録された情報
         {
             "id": 14, // 注文詳細番号
             "order_id": 15, // 注文番号
