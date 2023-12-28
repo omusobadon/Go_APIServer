@@ -119,11 +119,11 @@ func AutoInsert() error {
 					db.ProductGroup.Shop.Link(
 						db.Shop.ID.Equals(i.ID),
 					),
-					db.ProductGroup.StartBefore.Set("3d"),
-					db.ProductGroup.AvailableDuration.Set("3d"),
-					db.ProductGroup.UnitTime.Set("1h"),
-					db.ProductGroup.MaxTime.Set("72h"),
-					db.ProductGroup.Interval.Set("3h"),
+					// db.ProductGroup.StartBefore.Set(24),
+					// db.ProductGroup.AvailableDuration.Set(72),
+					// db.ProductGroup.UnitTime.Set(5),
+					// db.ProductGroup.MaxTime.Set(72),
+					// db.ProductGroup.Interval.Set(60),
 				).Exec(ctx)
 				if err != nil {
 					fmt.Println("エラー")

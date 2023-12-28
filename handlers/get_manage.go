@@ -13,7 +13,7 @@ import (
 type GetManageResponseBody struct {
 	Message string                 `json:"message"`
 	Shop    []db.ShopModel         `json:"shop"`
-	Group   []db.ProductGroupModel `json:"group"`
+	Group   []db.ProductGroupModel `json:"group_group"`
 	Product []db.ProductModel      `json:"product"`
 	Price   []db.PriceModel        `json:"price"`
 	Seat    []db.SeatModel         `json:"seat"`
@@ -22,22 +22,21 @@ type GetManageResponseBody struct {
 	Customer []db.CustomerModel          `json:"customer"`
 	Order    []db.OrderModel             `json:"order"`
 	Detail   []db.OrderDetailModel       `json:"order_detail"`
-	Payment  []db.PaymentStateModel      `json:"payment"`
-	Cancel   []db.ReservationCancelModel `json:"cancel"`
-	End      []db.ReservationEndModel    `json:"end"`
+	Payment  []db.PaymentStateModel      `json:"payment_state"`
+	Cancel   []db.ReservationCancelModel `json:"reservation_cancel"`
+	End      []db.ReservationEndModel    `json:"reservation_end"`
 }
 
 var get_manage_cnt int // GetManageの呼び出しカウント
 
 func GetManage(w http.ResponseWriter, r *http.Request) {
 	get_manage_cnt++
+	res := new(GetManageResponseBody)
 	var (
 		status  int
 		message string
 		err     error
-		// res     *GetManageResponseBody
 	)
-	res := new(GetManageResponseBody)
 
 	fmt.Printf("* Get Manage No.%d *\n", get_manage_cnt)
 

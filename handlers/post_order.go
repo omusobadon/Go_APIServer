@@ -5,21 +5,30 @@ import (
 	"Go_APIServer/db"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 )
 
 const (
-	time_free_enable bool = true
-	Seat_enable      bool = false
+// ユーザによる時刻指定を有効にするか
+// 有効にするとStockの開始・終了時刻は無効となる
+// time_free_enable bool = true
+// seat_enable      bool = false // 座席指定を有効にするか
+// payment_enable   bool = false // 決済処理をするか
+// user_notification_enable bool = false // 予約時間の終了をにユーザへ通知するか
+
+// 予約時間終了後にユーザに終了処理をさせるか
+// ユーザが終了処理をするまで在庫は戻らない
+// user_end_enable bool = false // 未実装
 )
 
 // リクエストを変換する構造体
-type PostOrderRequestBody struct {
+type PostOrderRequest struct {
 	Customer int       `json:"customer_id"`
 	Stock    int       `json:"stock_id"`
-	Seat     int       `json:"seat_id"`
+	Seat     []int     `json:"seat_id"`
 	Qty      int       `json:"qty"`
 	Start    time.Time `json:"start_at"`
 	End      time.Time `json:"end_at"`
@@ -27,64 +36,74 @@ type PostOrderRequestBody struct {
 	Remark   string    `json:"remark"`
 }
 
-// レスポンスに変換する構造体
-type PostOrderResponseBody struct {
-	Message string                `json:"message"`
-	Order   db.OrderModel         `json:"order"`
-	Detail  []db.OrderDetailModel `json:"detail"`
+// レスポンスに変換する構造体（処理成功）
+type PostOrderResponseSuccess struct {
+	Message string              `json:"message"`
+	Request PostOrderRequest    `json:"request"`
+	Order   db.OrderModel       `json:"order"`
+	Detail  db.OrderDetailModel `json:"order_detail"`
 }
 
-type TestRes struct {
-	Message string        `json:"message"`
-	Stock   db.StockModel `json:"stock"`
+// レスポンスに変換する構造体（処理失敗）
+type PostOrderResponseFailure struct {
+	Message string           `json:"message"`
+	Request PostOrderRequest `json:"request"`
 }
 
 var post_order_cnt int // PostOrderのカウント用
 
 func PostOrder(w http.ResponseWriter, r *http.Request) {
 	post_order_cnt++
+	order := new(db.OrderModel)
+	detail := new(db.OrderDetailModel)
 	var (
-		req PostOrderRequestBody
-		// order   Order
-		status  int
-		message string
-		err     error
-
-		stock *db.StockModel
+		status  int    = http.StatusNotImplemented
+		message string = "メッセージがありません"
+		req     PostOrderRequest
 	)
 
 	fmt.Printf("*** Post Order No.%d ***\n", post_order_cnt)
 
-	// リクエスト処理後のレスポンス処理
+	// 処理終了後のレスポンス処理
 	defer func() {
-		// レスポンスボディの作成
-		// res := PostOrderResponseBody{
-		// 	Message: message,
-		// 	Order:   order,
-		// }
 
-		res := TestRes{
-			Message: message,
-			Stock:   *stock,
-		}
-
-		// レスポンスをJSON形式で返す
+		// レスポンスヘッダー
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
 
-		if err := json.NewEncoder(w).Encode(res); err != nil {
-			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
-			status = http.StatusInternalServerError
-			message = fmt.Sprint("レスポンスの作成エラー : ", err)
-		}
+		// 注文成功時
+		if status == http.StatusOK {
+			res := new(PostOrderResponseSuccess)
 
-		// 処理結果メッセージの表示（サーバ側）
-		if status == 0 || message == "" {
-			fmt.Println("ステータスコードまたはメッセージがありません")
+			// レスポンスボディの作成
+			res.Message = message
+			res.Request = req
+			res.Order = *order
+			res.Detail = *detail
+
+			// レスポンス構造体をJSONに変換して送信
+			if err := json.NewEncoder(w).Encode(res); err != nil {
+				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+				status = http.StatusInternalServerError
+				message = fmt.Sprint("レスポンスの作成エラー : ", err)
+			}
+
 		} else {
-			fmt.Printf("[%d] %s\n", status, message)
+			res := new(PostOrderResponseFailure)
+
+			// レスポンスボディの作成
+			res.Message = message
+			res.Request = req
+
+			// レスポンス構造体をJSONに変換して送信
+			if err := json.NewEncoder(w).Encode(res); err != nil {
+				http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
+				status = http.StatusInternalServerError
+				message = fmt.Sprint("レスポンスの作成エラー : ", err)
+			}
 		}
 
+		fmt.Printf("[%d] %s\n", status, message)
 		fmt.Printf("*** Post Order No.%d End ***\n", post_order_cnt)
 
 	}()
@@ -95,16 +114,6 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		message = fmt.Sprint("POSTデコードエラー : ", err)
 		return
 	}
-
-	fmt.Printf("注文情報 : %+v\n", req)
-
-	// リクエストをOrderテーブルにコピー
-	// order.Customer = req.Customer
-	// order.Product = req.Product
-	// order.Start = req.Start
-	// order.End = req.End
-	// order.Num = req.Num
-	// order.Note = req.Note
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -122,8 +131,23 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
+	// 顧客情報が存在するか確認
+	_, err := client.Customer.FindUnique(
+		db.Customer.ID.Equals(req.Customer),
+	).Exec(ctx)
+	if errors.Is(err, db.ErrNotFound) {
+		status = http.StatusBadRequest
+		message = "顧客情報がありません"
+		return
+	}
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("顧客テーブル取得エラー : ", err)
+		return
+	}
+
 	// 注文情報の在庫IDと一致する情報を取得
-	stock, err = client.Stock.FindUnique(
+	stock, err := client.Stock.FindUnique(
 		db.Stock.ID.Equals(req.Stock)).With(
 		db.Stock.Price.Fetch().With(
 			db.Price.Product.Fetch().With(
@@ -131,6 +155,11 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			),
 		),
 	).Exec(ctx)
+	if errors.Is(err, db.ErrNotFound) {
+		status = http.StatusBadRequest
+		message = "在庫情報がありません"
+		return
+	}
 	if err != nil {
 		status = http.StatusBadRequest
 		message = fmt.Sprint("在庫テーブル取得エラー : ", err)
@@ -140,25 +169,41 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 	// 現在時刻の取得
 	now := time.Now()
 
-	// 予約開始時刻の計算
-	start_dur, err := time.ParseDuration(
-		stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.StartBefore,
-	)
-	start := now.Add(start_dur)
-
-	// 予約可能期間の計算
-	available_dur, err := time.ParseDuration(
-		stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.AvailableDuration,
-	)
-	duration := start.Add(available_dur)
-
-	if err != nil {
-		status = http.StatusInternalServerError
-		message = fmt.Sprint("時刻解析エラー : ", err)
+	// 予約開始時刻が現在よりも前のとき
+	if req.Start.Before(now) {
+		status = http.StatusBadRequest
+		message = "予約時間が過ぎています"
 		return
 	}
 
-	fmt.Println(start, duration)
+	// 予約開始時刻が終了時刻より後でないかチェック
+	if req.Start.After(req.End) {
+		status = http.StatusBadRequest
+		message = "予約開始時刻が終了時刻よりも後です"
+		return
+	}
+
+	// Productテーブルの予約開始可能期間(start_before)から予約開始可能時刻を計算
+	start_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.StartBefore)
+	start := now.Add(start_dur * time.Hour)
+
+	// 予約開始時刻が予約開始可能時刻より前のとき
+	if req.Start.Before(start) {
+		status = http.StatusBadRequest
+		message = "予約開始時刻までが短すぎます"
+		return
+	}
+
+	// 予約可能期間の終了時刻を計算
+	end_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.AvailableDuration)
+	end := start.Add(end_dur * time.Hour)
+
+	// 予約開始時刻が予約可能期間より後のとき
+	if req.Start.After(end) {
+		status = http.StatusBadRequest
+		message = "まだ予約できません"
+		return
+	}
 
 	// 在庫状態が有効かチェック
 	if !stock.IsEnable {
@@ -167,81 +212,62 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if time_free_enable {
-		// 予約開始時刻が終了時刻より後でないかチェック
-		if i := req.End.Sub(req.Start); i <= 0 {
-			status = http.StatusBadRequest
-			message = "予約時刻が不正"
-			return
-		}
-
-		//
-
-		fmt.Println("有効")
-		// // 在庫が注文数を上回っているかチェック
-
-		// if qty, _ := stock.Qty(); qty >= order.Num {
-
-		// 	// 在庫テーブルに注文情報を反映
-		// 	_, err := client.Stock.FindUnique(
-		// 		db.Stock.ID.Equals(order.Product),
-		// 	).Update(
-		// 		db.Stock.Num.Set(stock.InnerStock.Num - order.Num),
-		// 	).Exec(ctx)
-		// 	if err != nil {
-		// 		status = http.StatusBadRequest
-		// 		message = fmt.Sprint("在庫テーブルアップデートエラー : ", err)
-		// 		return
-		// 	}
-
-		// 	// Order.Stateを注文受付状態[1]に変更
-		// 	order.State = 1
-
-		// 	// 注文テーブルに注文情報をインサート
-		// 	if err := order.Insert(client); err != nil {
-
-		// 		// 注文を登録できなかった場合に在庫の数量を戻す
-		// 		_, err := client.Stock.FindMany(
-		// 			db.Stock.ID.Equals(order.Product),
-		// 		).Update(
-		// 			db.Stock.Num.Set(stock.InnerStock.Num + order.Num),
-		// 		).Exec(ctx)
-		// 		if err != nil {
-		// 			panic(fmt.Sprint("在庫整合性エラー : ", err))
-		// 		}
-
-		// 		status = http.StatusBadRequest
-		// 		message = fmt.Sprint("注文テーブルインサートエラー : ", err)
-		// 		return
-		// 	}
-
-		// 	// 正常終了のとき
-		// 	// 顧客IDと時刻をもとにテーブルを検索して注文IDを取得
-		// 	order_info, err := client.Order.FindFirst(
-		// 		db.Order.CustomerID.Equals(order.Customer),
-		// 		db.Order.Time.Equals(order.Time),
-		// 	).Exec(ctx)
-		// 	if err != nil {
-		// 		status = http.StatusInternalServerError
-		// 		message = fmt.Sprint("注文ID取得エラー : ", err)
-		// 		return
-		// 	}
-
-		// 	order.ID = order_info.ID
-		// 	fmt.Printf("注文終了 : %+v\n", order)
-
-		// 	status = http.StatusOK
-		// 	message = "正常終了"
-
-		// } else {
-		// 	// 在庫不足のとき
-		// 	status = http.StatusBadRequest
-		// 	message = "在庫不足"
-		// }
-
+	// // 在庫が注文数よりも少ない場合はエラー
+	var qty int
+	if qty, _ = stock.Qty(); qty < req.Qty {
+		status = http.StatusBadRequest
+		message = "在庫不足"
+		return
 	}
+
+	// 在庫テーブルに注文情報を反映
+	_, err = client.Stock.FindUnique(
+		db.Stock.ID.Equals(req.Stock),
+	).Update(
+		db.Stock.Qty.Set(qty - req.Qty),
+	).Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("在庫テーブルアップデートエラー : ", err)
+		return
+	}
+
+	// Orderテーブルに注文情報をインサート
+	order, err = client.Order.CreateOne(
+		db.Order.IsAccepted.Set(true),
+		db.Order.Customer.Link(
+			db.Customer.ID.Equals(req.Customer),
+		),
+		db.Order.StartAt.Set(req.Start),
+		db.Order.EndAt.Set(req.End),
+		db.Order.NumberPeople.Set(req.People),
+		db.Order.Remark.Set(req.Remark),
+	).Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("注文テーブルインサートエラー : ", err)
+		return
+	}
+
+	// OrderDetailテーブルに注文情報をインサート
+	detail, err = client.OrderDetail.CreateOne(
+		db.OrderDetail.Order.Link(
+			db.Order.ID.Equals(order.ID),
+		),
+		db.OrderDetail.Stock.Link(
+			db.Stock.ID.Equals(req.Stock),
+		),
+		db.OrderDetail.Qty.Set(req.Qty),
+	).Exec(ctx)
+	if err != nil {
+		status = http.StatusBadRequest
+		message = fmt.Sprint("注文詳細テーブルインサートエラー : ", err)
+		return
+	}
+
+	fmt.Println(order)
+	fmt.Println(detail)
 
 	status = http.StatusOK
 	message = "正常終了"
-
 }

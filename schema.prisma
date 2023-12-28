@@ -26,11 +26,11 @@ model ProductGroup {
   id Int @id @default(autoincrement())
   shop_id Int
   name String
-  start_before String @default("1d")
-  available_duration String @default("3d")
-  unit_time String?
-  max_time String?
-  interval String?
+  start_before Int @default(24)
+  available_duration Int @default(72)
+  unit_time Int?
+  max_time Int?
+  interval Int?
 
   shop Shop @relation(fields: [shop_id], references: [id])
   product Product[]
