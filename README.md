@@ -4,8 +4,8 @@
     git clone https://github.com/omusobadon/Go_APIServer.git
 ```
 ### 2. 環境変数ファイルの作成
-- DBのURLを記述した環境変数ファイル(.env)を"Go_APIServer/"へコピー
-- 記述例）DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@[URL]/postgres
+　DBのURLを記述した環境変数ファイル(.env)を"Go_APIServer/"へコピー
+　記述例）DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@[URL]/postgres
 
 ### 3. Prisma-Client-Goのインストール
 ```shell
@@ -18,7 +18,7 @@
 ```
 
 ## 在庫情報のGET
-- この情報をもとにユーザが注文を行う
+　この情報をもとにユーザが注文を行う
 
 ### 各テーブルのGET
 - Shop :        /get_shop
@@ -29,15 +29,15 @@
 - Stock :       /get_stock
 
 ### リクエストパラメータ
-- 各テーブルについて、1つ前のテーブルIDを使用して絞り込み
-- パラメータを設定しない場合は全取得する
-- 例）/get_group?id=1　→　ProductGroupテーブルの"shop_id=1"の情報を取得
-- 例）/get_group　→　ProductGroupテーブルを全取得
+　各テーブルについて、1つ前のテーブルIDを使用して絞り込み
+　パラメータを設定しない場合は全取得する
+　例）/get_group?id=1　→　ProductGroupテーブルの"shop_id=1"の情報を取得
+　例）/get_group　→　ProductGroupテーブルを全取得
 
 ## 予約注文のPOST
-- このPOSTを受け取り注文処理が行われる
+　このPOSTを受け取り注文処理が行われる
 
-#### 車の予約注文をPOSTする際のJSONパラメータ
+### 車の予約注文をPOSTする際のJSONパラメータ
 - customer_id   : Customer（顧客情報）テーブルID
 - stock_id      : Stock（在庫情報）テーブルID
 - qty           : 数量
@@ -57,11 +57,11 @@
 }
 ```
 
-#### 車の予約注文に対するレスポンス
-- 注文成功時と失敗時の2種類のレスポンスがある
-- 以下それぞれの場合のJSONパラメータとその例
+### 車の予約注文に対するレスポンス
+　注文成功時と失敗時の2種類のレスポンスがある
+　以下それぞれの場合のJSONパラメータとその例
 
-- 【成功時】
+#### 【成功時】
 - message       : メッセージ（正常終了など）
 - request       : POSTされた情報そのまま
 - order         : Order（注文情報）テーブルに登録された情報
@@ -99,8 +99,8 @@
 }
 ```
 
-- 【失敗時】
-- 失敗時は"message"と"request"情報のみのレスポンス
+#### 【失敗時】
+　失敗時は"message"と"request"情報のみのレスポンス
 
 ```json
 {
