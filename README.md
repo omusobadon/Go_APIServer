@@ -80,30 +80,30 @@
         "customer_id": 1,
         "start_at": "2023-12-30T18:10:00+09:00",
         "end_at": "2023-12-30T18:10:00+09:00",
-        "number_people": 0,
+        "number_people": 0, // 車の予約の場合は関係なし
         "remark": "test",
         "detail": [
             {
                 "stock_id": 1,
-                "seat_id": 0,
+                "seat_id": 0, // 同様に関係なし
                 "qty": 1
             }
         ]
     },
     "order": {
-        "id": 15,
+        "id": 15, // 注文番号
         "customer_id": 1,
         "start_at": "2023-12-30T09:10:00Z",
         "end_at": "2023-12-30T09:10:00Z",
-        "number_people": 0,
-        "is_accepted": true,
-        "created_at": "2023-12-28T08:40:28.848Z",
+        "number_people": 0, // 関係なし
+        "is_accepted": true, // 注文が承認されたか
+        "created_at": "2023-12-28T08:40:28.848Z", // 注文登録日時
         "remark": "test"
     },
     "order_detail": [
         {
-            "id": 14,
-            "order_id": 15,
+            "id": 14, // 注文詳細番号
+            "order_id": 15, // 注文番号
             "stock_id": 1,
             "qty": 1
         }
