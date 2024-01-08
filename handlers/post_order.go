@@ -12,16 +12,16 @@ import (
 )
 
 const (
-// ユーザによる時刻指定を有効にするか
-// 有効にするとStockの開始・終了時刻は無効となる
-// time_free_enable bool = true
-// seat_enable      bool = false // 座席指定を有効にするか
-// payment_enable   bool = false // 決済処理をするか
-// user_notification_enable bool = false // 予約時間の終了をにユーザへ通知するか
+	// ユーザによる時刻指定を有効にするか
+	// 有効にするとStockの開始・終了時刻は無効となる
+	time_free_enable bool = false
+	seat_enable      bool = true // 座席指定を有効にするか
+	// payment_enable   bool = false // 決済処理をするか
+	// user_notification_enable bool = false // 予約時間の終了をにユーザへ通知するか
 
-// 予約時間終了後にユーザに終了処理をさせるか
-// ユーザが終了処理をするまで在庫は戻らない
-// user_end_enable bool = false // 未実装
+	// 予約時間終了後にユーザに終了処理をさせるか
+	// ユーザが終了処理をするまで在庫は戻らない
+	// user_end_enable bool = false // 未実装
 )
 
 // リクエストを変換する構造体
@@ -66,8 +66,6 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		detail  []db.OrderDetailModel
 	)
 
-	fmt.Printf("*** Post Order No.%d ***\n", post_order_cnt)
-
 	// 処理終了後のレスポンス処理
 	defer func() {
 
@@ -107,8 +105,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Printf("[%d] %s\n", status, message)
-		fmt.Printf("*** Post Order No.%d End ***\n", post_order_cnt)
+		fmt.Printf("[PostOrder.%d][%d] %s\n", post_order_cnt, status, message)
 
 	}()
 
@@ -153,18 +150,21 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 	// 現在時刻の取得
 	now := time.Now()
 
-	// 予約開始時刻が現在よりも前のとき
-	if req.Start.Before(now) {
-		status = http.StatusBadRequest
-		message = "予約時間が過ぎています"
-		return
-	}
+	if time_free_enable {
 
-	// 予約開始時刻が終了時刻より後でないかチェック
-	if req.Start.After(req.End) {
-		status = http.StatusBadRequest
-		message = "予約開始時刻が終了時刻よりも後です"
-		return
+		// 予約開始時刻が現在よりも前のとき
+		if req.Start.Before(now) {
+			status = http.StatusBadRequest
+			message = "予約時間が過ぎています"
+			return
+		}
+
+		// 予約開始時刻が終了時刻より後でないかチェック
+		if req.Start.After(req.End) {
+			status = http.StatusBadRequest
+			message = "予約開始時刻が終了時刻よりも後です"
+			return
+		}
 	}
 
 	// 複数の注文の処理
@@ -219,26 +219,62 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// // 在庫が注文数よりも少ない場合はエラー
-		var qty int
-		if qty, _ = stock.Qty(); qty < v.Qty {
-			status = http.StatusBadRequest
-			message = "在庫不足"
-			return
-		}
+		// 座席が有効のときは座席情報を参照
+		// 無効のときは在庫の数量を参照
+		if seat_enable {
+			_, err := client.ReservedSeat.FindFirst(
+				db.ReservedSeat.StockID.Equals(v.Stock),
+				db.ReservedSeat.SeatID.Equals(v.Seat),
+			).Exec(ctx)
 
-		// 在庫テーブルに注文情報を反映
-		_, err = client.Stock.FindUnique(
-			db.Stock.ID.Equals(v.Stock),
-		).Update(
-			db.Stock.Qty.Set(qty - v.Qty),
-		).Exec(ctx)
-		if err != nil {
-			status = http.StatusBadRequest
-			message = fmt.Sprint("在庫テーブルアップデートエラー : ", err)
-			return
-		}
+			// 予約済み座席に登録されてない場合は予約
+			if errors.Is(err, db.ErrNotFound) {
+				_, err := client.ReservedSeat.CreateOne(
+					db.ReservedSeat.Stock.Link(
+						db.Stock.ID.Equals(v.Stock),
+					),
+					db.ReservedSeat.Seat.Link(
+						db.Seat.ID.Equals(v.Seat),
+					),
+				).Exec(ctx)
+				if err != nil {
+					status = http.StatusBadRequest
+					message = fmt.Sprint("ReservedSeatインサートエラー : ", err)
+					return
+				}
 
+			} else if err != nil {
+				status = http.StatusBadRequest
+				message = fmt.Sprint("ReservedSeat取得エラー : ", err)
+				return
+
+			} else {
+				status = http.StatusBadRequest
+				message = "予約済みです"
+				return
+			}
+
+		} else {
+			// // 在庫が注文数よりも少ない場合はエラー
+			var qty int
+			if qty, _ = stock.Qty(); qty < v.Qty {
+				status = http.StatusBadRequest
+				message = "在庫不足"
+				return
+			}
+
+			// 在庫テーブルに注文情報を反映
+			_, err = client.Stock.FindUnique(
+				db.Stock.ID.Equals(v.Stock),
+			).Update(
+				db.Stock.Qty.Set(qty - v.Qty),
+			).Exec(ctx)
+			if err != nil {
+				status = http.StatusBadRequest
+				message = fmt.Sprint("在庫テーブルアップデートエラー : ", err)
+				return
+			}
+		}
 	}
 
 	// Orderテーブルに注文情報をインサート
