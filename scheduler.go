@@ -21,7 +21,7 @@ func scheduler() error {
 	var cnt int
 	delay := time.Duration(d) * time.Second
 
-	fmt.Println("Scheduler started. delay time :", delay)
+	fmt.Println("Scheduler started! delay time :", delay)
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()

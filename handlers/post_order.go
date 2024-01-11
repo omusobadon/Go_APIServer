@@ -20,7 +20,7 @@ const (
 	seat_enable bool = true
 
 	// 決済処理をするか
-	payment_enable bool = false
+	// payment_enable bool = false
 
 	// 予約時間終了後にユーザに終了処理をさせるか
 	// ユーザが終了処理をするまで在庫は戻らない
@@ -206,22 +206,43 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		start_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.StartBefore)
 		start := now.Add(start_dur * time.Hour)
 
-		// 予約開始時刻が予約開始可能時刻より前のとき
-		if req.Start.Before(start) {
-			status = http.StatusBadRequest
-			message = "予約開始時刻までが短すぎます"
-			return
-		}
-
 		// 予約可能期間の終了時刻を計算
 		end_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.AvailableDuration)
 		end := start.Add(end_dur * time.Hour)
 
-		// 予約開始時刻が予約可能期間より後のとき
-		if req.Start.After(end) {
-			status = http.StatusBadRequest
-			message = "まだ予約できません"
-			return
+		fmt.Printf("start : %v, end : %v\n", start, end)
+
+		// ユーザによる時刻指定が有効の場合は、リクエストstart_atから予約可能か判断
+		// 無効の場合は、Stockのstart_atから判断
+		if time_free_enable {
+			// 予約開始時刻が予約開始可能時刻より前のとき
+			if req.Start.Before(start) {
+				status = http.StatusBadRequest
+				message = "予約開始時刻までが短すぎます"
+				return
+			}
+
+			// 予約開始時刻が予約可能期間より後のとき
+			if req.Start.After(end) {
+				status = http.StatusBadRequest
+				message = "まだ予約できません"
+				return
+			}
+
+		} else {
+			// 予約開始時刻が予約開始可能時刻より前のとき
+			if s, _ := stock.StartAt(); s.Before(start) {
+				status = http.StatusBadRequest
+				message = "予約受付期間外です"
+				return
+			}
+
+			// 予約開始時刻が予約可能期間より後のとき
+			if e, _ := stock.StartAt(); e.After(end) {
+				status = http.StatusBadRequest
+				message = "予約受付期間外です"
+				return
+			}
 		}
 
 		// Productテーブルのmax_people(最大人数)以内かチェック
@@ -238,7 +259,25 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		// 座席が有効のときは座席情報を参照
 		// 無効のときは在庫の数量を参照
 		if seat_enable {
-			_, err := client.ReservedSeat.FindFirst(
+			// 座席情報の取得
+			seat, err := client.Seat.FindUnique(
+				db.Seat.ID.Equals(v.Seat),
+			).Exec(ctx)
+			if err != nil {
+				status = http.StatusBadRequest
+				message = fmt.Sprint("Seat取得エラー : ", err)
+				return
+			}
+
+			// 座席が無効の場合はエラー
+			if !seat.IsEnable {
+				status = http.StatusBadRequest
+				message = "無効な座席"
+				return
+			}
+
+			// ReservedSeatを取得
+			_, err = client.ReservedSeat.FindFirst(
 				db.ReservedSeat.StockID.Equals(v.Stock),
 				db.ReservedSeat.SeatID.Equals(v.Seat),
 			).Exec(ctx)

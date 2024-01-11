@@ -46,9 +46,6 @@ func APIServer() error {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	// 各テーブルのチェック
-	// 未実装
-
 	fmt.Println("Server started!")
 
 	// 各ハンドラの呼び出し
@@ -59,6 +56,9 @@ func APIServer() error {
 	http.HandleFunc("/get_price", CORSMiddleware(handlers.GetPrice))
 	http.HandleFunc("/get_seat", CORSMiddleware(handlers.GetSeat))
 	http.HandleFunc("/get_stock", CORSMiddleware(handlers.GetStock))
+
+	// 管理用GET
+	http.HandleFunc("/get_customer", CORSMiddleware(handlers.GetCustomer))
 	http.HandleFunc("/get_manage", CORSMiddleware(handlers.GetManage))
 
 	// POST
