@@ -210,7 +210,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		end_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.AvailableDuration)
 		end := start.Add(end_dur * time.Hour)
 
-		fmt.Printf("start : %v, end : %v\n", start, end)
+		// fmt.Printf("start : %v, end : %v\n", start, end)
 
 		// ユーザによる時刻指定が有効の場合は、リクエストstart_atから予約可能か判断
 		// 無効の場合は、Stockのstart_atから判断
