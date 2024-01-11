@@ -159,7 +159,6 @@ func AutoInsert() error {
 				// insert
 				_, err := client.Product.CreateOne(
 					db.Product.Name.Set(fmt.Sprintf("%s %d", product_name, j+1)),
-					db.Product.MaxPeople.Set(1),
 					db.Product.Group.Link(
 						db.ProductGroup.ID.Equals(i.ID),
 					),

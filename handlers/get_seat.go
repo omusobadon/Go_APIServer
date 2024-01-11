@@ -28,8 +28,6 @@ func GetSeat(w http.ResponseWriter, r *http.Request) {
 		err     error
 	)
 
-	fmt.Printf("* Get Seat No.%d *\n", get_seat_cnt)
-
 	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
@@ -47,14 +45,7 @@ func GetSeat(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		// 処理結果メッセージの表示（サーバ側）
-		if status == 0 || message == "" {
-			fmt.Println("ステータスコードまたはメッセージがありません")
-		} else {
-			fmt.Printf("[%d] %s\n", status, message)
-		}
-
-		fmt.Printf("* Get Seat No.%d End *\n", get_seat_cnt)
+		fmt.Printf("[Get Seat.%d][%d] %s\n", get_seat_cnt, status, message)
 	}()
 
 	// リクエストパラメータの取得

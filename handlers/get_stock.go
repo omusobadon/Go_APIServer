@@ -48,14 +48,7 @@ func GetStock(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		// 処理結果メッセージの表示（サーバ側）
-		if status == 0 || message == "" {
-			fmt.Println("ステータスコードまたはメッセージがありません")
-		} else {
-			fmt.Printf("[%d] %s\n", status, message)
-		}
-
-		fmt.Printf("* Get Stock No.%d End *\n", get_stock_cnt)
+		fmt.Printf("[Get Stock.%d][%d] %s\n", get_stock_cnt, status, message)
 	}()
 
 	// リクエストパラメータの取得

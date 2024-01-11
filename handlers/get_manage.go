@@ -16,10 +16,10 @@ type GetManageTestResponse struct {
 	Customers []db.CustomerModel     `json:"customers"`
 }
 
-var get_manage_test_cnt int // PostOrderのカウント用
+var get_manage_cnt int // PostOrderのカウント用
 
 func GetManage(w http.ResponseWriter, r *http.Request) {
-	get_manage_test_cnt++
+	get_manage_cnt++
 	var (
 		err       error
 		status    int    = http.StatusNotImplemented
@@ -48,7 +48,7 @@ func GetManage(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		fmt.Printf("[GetManage.%d][%d] %s\n", get_manage_test_cnt, status, message)
+		fmt.Printf("[Get Manage.%d][%d] %s\n", get_manage_cnt, status, message)
 
 	}()
 

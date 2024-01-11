@@ -26,8 +26,6 @@ func GetShop(w http.ResponseWriter, r *http.Request) {
 		message string
 	)
 
-	fmt.Printf("* Get Shop No.%d *\n", get_shop_cnt)
-
 	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
@@ -46,14 +44,7 @@ func GetShop(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		// 処理結果メッセージの表示（サーバ側）
-		if status == 0 || message == "" {
-			fmt.Println("ステータスコードまたはメッセージがありません")
-		} else {
-			fmt.Printf("[%d] %s\n", status, message)
-		}
-
-		fmt.Printf("* Get Shop No.%d End *\n", get_shop_cnt)
+		fmt.Printf("[Get Shop.%d][%d] %s\n", get_shop_cnt, status, message)
 	}()
 
 	// データベース接続用クライアントの作成

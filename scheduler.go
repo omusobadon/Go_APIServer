@@ -9,8 +9,13 @@ import (
 	"time"
 )
 
-// デフォルトの遅延時間(s)
-const d int = 20
+const (
+	// 予約時間の終了をにユーザへ通知するか
+	// user_notification_enable bool = false
+
+	// デフォルトの遅延時間(s)
+	d int = 20
+)
 
 func scheduler() error {
 	var cnt int

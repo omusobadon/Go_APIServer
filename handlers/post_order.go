@@ -15,9 +15,12 @@ const (
 	// ユーザによる時刻指定を有効にするか
 	// 有効にするとStockの開始・終了時刻は無効となる
 	time_free_enable bool = false
-	seat_enable      bool = true // 座席指定を有効にするか
-	// payment_enable   bool = false // 決済処理をするか
-	// user_notification_enable bool = false // 予約時間の終了をにユーザへ通知するか
+
+	// 座席指定を有効にするか
+	seat_enable bool = true
+
+	// 決済処理をするか
+	payment_enable bool = false
 
 	// 予約時間終了後にユーザに終了処理をさせるか
 	// ユーザが終了処理をするまで在庫は戻らない
@@ -35,9 +38,10 @@ type PostOrderRequest struct {
 }
 
 type PostOrderRequestDetail struct {
-	Stock int `json:"stock_id"`
-	Seat  int `json:"seat_id"`
-	Qty   int `json:"qty"`
+	Stock  int `json:"stock_id"`
+	Seat   int `json:"seat_id"`
+	People int `json:"number_people"`
+	Qty    int `json:"qty"`
 }
 
 // レスポンスに変換する構造体（処理成功）
@@ -62,7 +66,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		status  int    = http.StatusNotImplemented
 		message string = "メッセージがありません"
 		req     PostOrderRequest
-		order   db.OrderModel
+		order   *db.OrderModel
 		detail  []db.OrderDetailModel
 	)
 
@@ -80,7 +84,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			// レスポンスボディの作成
 			res.Message = message
 			res.Request = req
-			res.Order = order
+			res.Order = *order
 			res.Detail = detail
 
 			// レスポンス構造体をJSONに変換して送信
@@ -105,7 +109,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Printf("[PostOrder.%d][%d] %s\n", post_order_cnt, status, message)
+		fmt.Printf("[Post Order.%d][%d] %s\n", post_order_cnt, status, message)
 
 	}()
 
@@ -150,16 +154,17 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 	// 現在時刻の取得
 	now := time.Now()
 
+	// ユーザによる時刻指定が有効のとき
 	if time_free_enable {
 
-		// 予約開始時刻が現在よりも前のとき
+		// 予約開始時刻が現在よりも前のときはエラー
 		if req.Start.Before(now) {
 			status = http.StatusBadRequest
 			message = "予約時間が過ぎています"
 			return
 		}
 
-		// 予約開始時刻が終了時刻より後でないかチェック
+		// 予約開始時刻が終了時刻より後の場合はエラー
 		if req.Start.After(req.End) {
 			status = http.StatusBadRequest
 			message = "予約開始時刻が終了時刻よりも後です"
@@ -167,7 +172,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 複数の注文の処理
+	// 注文処理
 	for _, v := range req.Detail {
 
 		// 注文情報の在庫IDと一致する情報を取得
@@ -217,6 +222,17 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusBadRequest
 			message = "まだ予約できません"
 			return
+		}
+
+		// Productテーブルのmax_people(最大人数)以内かチェック
+		// max_people = 0 の場合は最大人数無指定としてチェックしない
+		max_people, _ := stock.RelationsStock.Price.RelationsPrice.Product.MaxPeople()
+		if max_people != 0 {
+			if req.People > max_people {
+				status = http.StatusBadRequest
+				message = "人数超過です"
+				return
+			}
 		}
 
 		// 座席が有効のときは座席情報を参照
@@ -278,14 +294,14 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Orderテーブルに注文情報をインサート
-	ord, err := client.Order.CreateOne(
+	order, err = client.Order.CreateOne(
 		db.Order.IsAccepted.Set(true),
+		db.Order.IsPending.Set(false),
 		db.Order.Customer.Link(
 			db.Customer.ID.Equals(req.Customer),
 		),
 		db.Order.StartAt.Set(req.Start),
 		db.Order.EndAt.Set(req.End),
-		db.Order.NumberPeople.Set(req.People),
 		db.Order.Remark.Set(req.Remark),
 	).Exec(ctx)
 	if err != nil {
@@ -293,8 +309,6 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		message = fmt.Sprint("注文テーブルインサートエラー : ", err)
 		return
 	}
-
-	order = *ord
 
 	// OrderDetailテーブルに注文情報をインサート
 	for _, v := range req.Detail {
