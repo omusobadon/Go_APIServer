@@ -34,7 +34,7 @@ func PostCustomer(w http.ResponseWriter, r *http.Request) {
 		status   int    = http.StatusNotImplemented
 		message  string = "メッセージがありません"
 		req      PostCustomerRequest
-		customer *db.CustomerModel
+		customer db.CustomerModel
 	)
 
 	// 処理終了後のレスポンス処理
@@ -50,7 +50,7 @@ func PostCustomer(w http.ResponseWriter, r *http.Request) {
 		// レスポンスボディの作成
 		res.Message = message
 		res.Request = req
-		res.Registered = *customer
+		res.Registered = customer
 
 		// レスポンス構造体をJSONに変換して送信
 		if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -67,6 +67,12 @@ func PostCustomer(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		status = http.StatusBadRequest
 		message = fmt.Sprint("POSTデコードエラー : ", err)
+		return
+	}
+
+	if req.Name == "" || req.Mail == "" || req.Phone == "" || req.Passwd == "" {
+		status = http.StatusBadRequest
+		message = "必要な情報がありません"
 		return
 	}
 
@@ -87,7 +93,7 @@ func PostCustomer(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	// 顧客情報の挿入
-	customer, err := client.Customer.CreateOne(
+	c, err := client.Customer.CreateOne(
 		db.Customer.Name.Set(req.Name),
 		db.Customer.Mail.Set(req.Mail),
 		db.Customer.Phone.Set(req.Phone),
@@ -100,6 +106,8 @@ func PostCustomer(w http.ResponseWriter, r *http.Request) {
 		message = fmt.Sprint("顧客テーブル挿入エラー : ", err)
 		return
 	}
+
+	customer = *c
 
 	status = http.StatusOK
 	message = "正常終了"
