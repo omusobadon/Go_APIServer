@@ -70,7 +70,7 @@ func PostCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Name == "" || req.Mail == "" || req.Phone == "" || req.Passwd == "" {
+	if req.Name == "" || req.Mail == "" || req.Phone == "" {
 		status = http.StatusBadRequest
 		message = "必要な情報がありません"
 		return
