@@ -109,6 +109,7 @@ model Customer {
   name String
   mail String
   phone String
+  password String
   address String?
   payment_info String?
 
