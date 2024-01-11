@@ -63,6 +63,7 @@ func APIServer() error {
 
 	// POST
 	http.HandleFunc("/post_order", CORSMiddleware(handlers.PostOrder))
+	http.HandleFunc("/post_customer", CORSMiddleware(handlers.PostCustomer))
 
 	// http.HandleFunc("/order_change", handlers.OrderChange)
 	// http.HandleFunc("/manage_get", handlers.ManageGet)
