@@ -1,4 +1,3 @@
-// 管理情報のGET
 package handlers
 
 import (
@@ -7,62 +6,65 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 // レスポンスに変換する構造体
-type GetManageResponseBody struct {
-	Message string                 `json:"message"`
-	Shop    []db.ShopModel         `json:"shop"`
-	Group   []db.ProductGroupModel `json:"group_group"`
-	Product []db.ProductModel      `json:"product"`
-	Price   []db.PriceModel        `json:"price"`
-	Seat    []db.SeatModel         `json:"seat"`
-	Stock   []db.StockModel        `json:"stock"`
-
-	Customer []db.CustomerModel          `json:"customer"`
-	Order    []db.OrderModel             `json:"order"`
-	Detail   []db.OrderDetailModel       `json:"order_detail"`
-	Payment  []db.PaymentStateModel      `json:"payment_state"`
-	Cancel   []db.ReservationCancelModel `json:"reservation_cancel"`
-	End      []db.ReservationEndModel    `json:"reservation_end"`
+type GetManageTestResponse struct {
+	Message   string                 `json:"message"`
+	Groups    []db.ProductGroupModel `json:"groups"`
+	Customers []db.CustomerModel     `json:"customers"`
 }
 
-var get_manage_cnt int // GetManageの呼び出しカウント
+var get_manage_test_cnt int // PostOrderのカウント用
 
 func GetManage(w http.ResponseWriter, r *http.Request) {
-	get_manage_cnt++
-	res := new(GetManageResponseBody)
+	get_manage_test_cnt++
 	var (
-		status  int
-		message string
-		err     error
+		err       error
+		status    int    = http.StatusNotImplemented
+		message   string = "メッセージがありません"
+		groups    []db.ProductGroupModel
+		customers []db.CustomerModel
 	)
 
-	fmt.Printf("* Get Manage No.%d *\n", get_manage_cnt)
-
-	// リクエスト処理後のレスポンス作成
+	// 処理終了後のレスポンス処理
 	defer func() {
+		res := new(GetManageTestResponse)
+
 		// レスポンスボディの作成
 		res.Message = message
+		res.Groups = groups
+		res.Customers = customers
 
-		// レスポンスをJSON形式で返す
+		// レスポンスヘッダーの作成
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+
+		// レスポンス構造体をJSONに変換して送信
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			http.Error(w, "レスポンスの作成エラー", http.StatusInternalServerError)
 			status = http.StatusInternalServerError
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		// 処理結果メッセージの表示（サーバ側）
-		if status == 0 || message == "" {
-			fmt.Println("ステータスコードまたはメッセージがありません")
-		} else {
-			fmt.Printf("[%d] %s\n", status, message)
-		}
+		fmt.Printf("[GetManage.%d][%d] %s\n", get_manage_test_cnt, status, message)
 
-		fmt.Printf("* Get Manage No.%d End *\n", get_manage_cnt)
 	}()
+
+	// リクエストパラメータの取得
+	shop_str := r.FormValue("shop_id")
+
+	// パラメータが空でない場合はIntに変換
+	var shop_id int
+	if shop_str != "" {
+		shop_id, err = strconv.Atoi(shop_str)
+		if err != nil {
+			status = http.StatusBadRequest
+			message = fmt.Sprint("不正なパラメータ : ", err)
+			return
+		}
+	}
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -80,99 +82,40 @@ func GetManage(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Shopテーブルの内容を一括取得
-	res.Shop, err = client.Shop.FindMany().Exec(ctx)
+	// GET
+	groups, err = client.ProductGroup.FindMany(
+		db.ProductGroup.ID.Equals(shop_id),
+	).With(
+		db.ProductGroup.Product.Fetch().With(
+			db.Product.Price.Fetch().With(
+				db.Price.Stock.Fetch().With(
+					db.Stock.OrderDetail.Fetch(),
+				),
+			),
+		).With(
+			db.Product.Seat.Fetch(),
+		),
+	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("店舗テーブル取得エラー : ", err)
+		message = fmt.Sprint("テーブル取得エラー : ", err)
 		return
 	}
 
-	// ProductGroup
-	res.Group, err = client.ProductGroup.FindMany().Exec(ctx)
+	customers, err = client.Customer.FindMany().With(
+		db.Customer.Order.Fetch().With(
+			db.Order.PaymentState.Fetch(),
+		).With(
+			db.Order.ReservationCancel.Fetch(),
+		).With(
+			db.Order.ReservationEnd.Fetch(),
+		).With(
+			db.Order.OrderDetail.Fetch(),
+		),
+	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("グループテーブル取得エラー : ", err)
-		return
-	}
-
-	// Product
-	res.Product, err = client.Product.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("商品テーブル取得エラー : ", err)
-		return
-	}
-
-	// Price
-	res.Price, err = client.Price.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("価格テーブル取得エラー : ", err)
-		return
-	}
-
-	// Seat
-	res.Seat, err = client.Seat.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("座席テーブル取得エラー : ", err)
-		return
-	}
-
-	// Stock
-	res.Stock, err = client.Stock.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("在庫テーブル取得エラー : ", err)
-		return
-	}
-
-	// Customer
-	res.Customer, err = client.Customer.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("顧客テーブル取得エラー : ", err)
-		return
-	}
-
-	// Order
-	res.Order, err = client.Order.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("注文テーブル取得エラー : ", err)
-		return
-	}
-
-	// OrderDetail
-	res.Detail, err = client.OrderDetail.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("注文詳細テーブル取得エラー : ", err)
-		return
-	}
-
-	// PaymentState
-	res.Payment, err = client.PaymentState.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("決済状態テーブル取得エラー : ", err)
-		return
-	}
-
-	// ReservationCancel
-	res.Cancel, err = client.ReservationCancel.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("予約キャンセルテーブル取得エラー : ", err)
-		return
-	}
-
-	// ReservationEnd
-	res.End, err = client.ReservationEnd.FindMany().Exec(ctx)
-	if err != nil {
-		status = http.StatusBadRequest
-		message = fmt.Sprint("予約終了テーブル取得エラー : ", err)
+		message = fmt.Sprint("テーブル取得エラー : ", err)
 		return
 	}
 
