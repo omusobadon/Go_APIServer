@@ -72,11 +72,11 @@ func GetCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 取得した情報がないとき
-	if len(customer) == 0 {
-		status = http.StatusBadRequest
-		message = "商品グループ情報がありません"
-		return
-	}
+	// if len(customer) == 0 {
+	// 	status = http.StatusBadRequest
+	// 	message = "顧客情報がありません"
+	// 	return
+	// }
 
 	status = http.StatusOK
 	message = "正常終了"

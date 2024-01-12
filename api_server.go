@@ -7,18 +7,6 @@ import (
 	"time"
 )
 
-const (
-	// time_free_enable bool = true
-	// Seat_enable      bool = false
-	// user_end_enable bool = false
-	// user_notification bool = false
-
-	// timezone =
-
-	// 商品・在庫テーブルが空の場合、自動生成するかどうか
-	auto_insert bool = true
-)
-
 func CORSMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

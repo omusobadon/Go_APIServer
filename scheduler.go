@@ -9,17 +9,9 @@ import (
 	"time"
 )
 
-const (
-	// 予約時間の終了をにユーザへ通知するか
-	// user_notification_enable bool = false
-
-	// デフォルトの遅延時間(s)
-	d int = 20
-)
-
 func scheduler() error {
 	var cnt int
-	delay := time.Duration(d) * time.Second
+	delay := time.Duration(OPTIONS.Default_delay) * time.Second
 
 	fmt.Println("Scheduler started! delay time :", delay)
 
