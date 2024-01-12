@@ -14,10 +14,10 @@ import (
 const (
 	// ユーザによる時刻指定を有効にするか
 	// 有効にするとStockの開始・終了時刻は無効となる
-	time_free_enable bool = false
+	time_free_enable bool = true
 
 	// 座席指定を有効にするか
-	seat_enable bool = true
+	seat_enable bool = false
 
 	// 決済処理をするか
 	// payment_enable bool = false
