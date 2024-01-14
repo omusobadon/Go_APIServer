@@ -1,7 +1,8 @@
 package main
 
 import (
-	"Go_APIServer/handlers"
+	"Go_APIServer/get"
+	"Go_APIServer/post"
 	"fmt"
 	"net/http"
 	"time"
@@ -34,31 +35,32 @@ func APIServer() error {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	fmt.Println("Server started!")
+	// fmt.Println("Server started!")
 
 	// 各ハンドラの呼び出し
 	// GET
-	http.HandleFunc("/get_shop", CORSMiddleware(handlers.GetShop))
-	http.HandleFunc("/get_group", CORSMiddleware(handlers.GetGroup))
-	http.HandleFunc("/get_product", CORSMiddleware(handlers.GetProduct))
-	http.HandleFunc("/get_price", CORSMiddleware(handlers.GetPrice))
-	http.HandleFunc("/get_seat", CORSMiddleware(handlers.GetSeat))
-	http.HandleFunc("/get_stock", CORSMiddleware(handlers.GetStock))
+	http.HandleFunc("/get_shop", CORSMiddleware(get.GetShop))
+	http.HandleFunc("/get_group", CORSMiddleware(get.GetGroup))
+	http.HandleFunc("/get_product", CORSMiddleware(get.GetProduct))
+	http.HandleFunc("/get_price", CORSMiddleware(get.GetPrice))
+	http.HandleFunc("/get_seat", CORSMiddleware(get.GetSeat))
+	http.HandleFunc("/get_stock", CORSMiddleware(get.GetStock))
 
 	// 管理用GET
-	http.HandleFunc("/get_customer", CORSMiddleware(handlers.GetCustomer))
-	http.HandleFunc("/get_manage", CORSMiddleware(handlers.GetManage))
+	http.HandleFunc("/get_customer", CORSMiddleware(get.GetCustomer))
+	http.HandleFunc("/get_manage", CORSMiddleware(get.GetManage))
 
 	// POST
-	http.HandleFunc("/post_order", CORSMiddleware(handlers.PostOrder))
-	http.HandleFunc("/post_customer", CORSMiddleware(handlers.PostCustomer))
+	http.HandleFunc("/post_order", CORSMiddleware(post.PostOrder))
+	http.HandleFunc("/post_customer", CORSMiddleware(post.PostCustomer))
 
-	// http.HandleFunc("/order_change", handlers.OrderChange)
-	// http.HandleFunc("/manage_get", handlers.ManageGet)
-	// http.HandleFunc("/manage_post", handlers.ManagePost)
-	http.HandleFunc("/test", handlers.Test)
+	// http.HandleFunc("/order_change", post.OrderChange)
+	// http.HandleFunc("/manage_get", post.ManageGet)
+	// http.HandleFunc("/manage_post", post.ManagePost)
+	http.HandleFunc("/test", post.Test)
 
 	// サーバの起動
+	fmt.Println("[Server start]")
 	server.ListenAndServe()
 
 	return nil

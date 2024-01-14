@@ -1,5 +1,5 @@
 // 時刻取得処理
-package main
+package funcs
 
 import (
 	"encoding/json"

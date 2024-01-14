@@ -1,5 +1,5 @@
 // スケジューラで実行される処理
-package main
+package scheduler
 
 import (
 	"Go_APIServer/db"

@@ -1,7 +1,8 @@
-package main
+package ini
 
 import (
 	"Go_APIServer/db"
+	"Go_APIServer/funcs"
 	"context"
 	"fmt"
 	"math/rand"
@@ -273,7 +274,7 @@ func AutoInsert() error {
 		fmt.Printf("在庫テーブルにインサート(%d件)...", len(price)*stock_num)
 
 		// 現在時刻の取得
-		now := GetTime()
+		now := funcs.GetTime()
 
 		// 開始・終了時刻生成用の基準時間
 		time_generated := time.Date(

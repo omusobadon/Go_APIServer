@@ -1,30 +1,15 @@
 // 注文情報のPOST
-package handlers
+package post
 
 import (
 	"Go_APIServer/db"
+	"Go_APIServer/ini"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
-)
-
-const (
-	// ユーザによる時刻指定を有効にするか
-	// 有効にするとStockの開始・終了時刻は無効となる
-	time_free_enable bool = true
-
-	// 座席指定を有効にするか
-	seat_enable bool = false
-
-	// 決済処理をするか
-	// payment_enable bool = false
-
-	// 予約時間終了後にユーザに終了処理をさせるか
-	// ユーザが終了処理をするまで在庫は戻らない
-	// user_end_enable bool = false // 未実装
 )
 
 // リクエストを変換する構造体
@@ -58,6 +43,7 @@ type PostOrderResponseFailure struct {
 	Request PostOrderRequest `json:"request"`
 }
 
+var options ini.Options = ini.OPTIONS
 var post_order_cnt int // PostOrderのカウント用
 
 func PostOrder(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +141,8 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	// ユーザによる時刻指定が有効のとき
-	if time_free_enable {
+	// 時刻指定が正しいかチェック
+	if options.Time_free_enable {
 
 		// 予約開始時刻が現在よりも前のときはエラー
 		if req.Start.Before(now) {
@@ -172,10 +159,23 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var test []db.RawStockModel
-	err = client.Prisma.QueryRaw("BEGIN").Exec(ctx, &test)
+	// トランザクションの開始
+	// Stock用
+	var transaction_stock []db.RawStockModel
+	err = client.Prisma.QueryRaw("BEGIN").Exec(ctx, &transaction_stock)
 	if err != nil {
-		fmt.Println("エラー")
+		status = http.StatusInternalServerError
+		message = fmt.Sprint("トランザクション開始エラー : ", err)
+		return
+	}
+
+	// ReservationSeat用
+	var transaction_seat []db.RawSeatReservationModel
+	err = client.Prisma.QueryRaw("BEGIN").Exec(ctx, &transaction_seat)
+	if err != nil {
+		status = http.StatusInternalServerError
+		message = fmt.Sprint("トランザクション開始エラー : ", err)
+		return
 	}
 
 	// 注文処理
@@ -216,11 +216,12 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		end_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.AvailableDuration)
 		end := start.Add(end_dur * time.Hour)
 
-		// fmt.Printf("start : %v, end : %v\n", start, end)
+		fmt.Printf("start : %v, end : %v\n", start, end)
 
 		// ユーザによる時刻指定が有効の場合は、リクエストstart_atから予約可能か判断
 		// 無効の場合は、Stockのstart_atから判断
-		if time_free_enable {
+		if options.Time_free_enable {
+
 			// 予約開始時刻が予約開始可能時刻より前のとき
 			if req.Start.Before(start) {
 				status = http.StatusBadRequest
@@ -264,7 +265,8 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 		// 座席が有効のときは座席情報を参照
 		// 無効のときは在庫の数量を参照
-		if seat_enable {
+		if options.Seat_enable {
+
 			// 座席情報の取得
 			seat, err := client.Seat.FindUnique(
 				db.Seat.ID.Equals(v.Seat),
@@ -282,37 +284,39 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			// ReservedSeatを取得
-			_, err = client.ReservedSeat.FindFirst(
-				db.ReservedSeat.StockID.Equals(v.Stock),
-				db.ReservedSeat.SeatID.Equals(v.Seat),
+			// SeatReservationを取得
+			reserv, err := client.SeatReservation.FindUnique(
+				db.SeatReservation.StockIdseatID(
+					db.SeatReservation.StockID.Equals(v.Stock),
+					db.SeatReservation.SeatID.Equals(v.Seat),
+				),
 			).Exec(ctx)
-
-			// 予約済み座席に登録されてない場合は予約
-			if errors.Is(err, db.ErrNotFound) {
-				_, err := client.ReservedSeat.CreateOne(
-					db.ReservedSeat.Stock.Link(
-						db.Stock.ID.Equals(v.Stock),
-					),
-					db.ReservedSeat.Seat.Link(
-						db.Seat.ID.Equals(v.Seat),
-					),
-				).Exec(ctx)
-				if err != nil {
-					status = http.StatusBadRequest
-					message = fmt.Sprint("ReservedSeatインサートエラー : ", err)
-					return
-				}
-
-			} else if err != nil {
+			if err != nil {
 				status = http.StatusBadRequest
-				message = fmt.Sprint("ReservedSeat取得エラー : ", err)
+				message = fmt.Sprint("Seat取得エラー : ", err)
 				return
+			}
 
-			} else {
+			// 予約済みでない場合は予約
+			if reserv.IsReserved {
 				status = http.StatusBadRequest
 				message = "予約済みです"
 				return
+
+			} else {
+				_, err := client.SeatReservation.FindUnique(
+					db.SeatReservation.StockIdseatID(
+						db.SeatReservation.StockID.Equals(v.Stock),
+						db.SeatReservation.SeatID.Equals(v.Seat),
+					),
+				).Update(
+					db.SeatReservation.IsReserved.Set(true),
+				).Exec(ctx)
+				if err != nil {
+					status = http.StatusBadRequest
+					message = fmt.Sprint("Seat挿入エラー : ", err)
+					return
+				}
 			}
 
 		} else {
@@ -332,7 +336,6 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			).Exec(ctx)
 
 			if err != nil {
-				_ = client.Prisma.QueryRaw("ROLLBACK").Exec(ctx, test)
 				status = http.StatusBadRequest
 				message = fmt.Sprint("在庫テーブルアップデートエラー : ", err)
 				return
@@ -340,7 +343,9 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_ = client.Prisma.QueryRaw("COMMIT").Exec(ctx, test)
+	// トランザクションの終了
+	_ = client.Prisma.QueryRaw("COMMIT").Exec(ctx, transaction_stock)
+	_ = client.Prisma.QueryRaw("COMMIT").Exec(ctx, transaction_seat)
 
 	// Orderテーブルに注文情報をインサート
 	order, err = client.Order.CreateOne(

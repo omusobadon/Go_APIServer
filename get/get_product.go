@@ -1,5 +1,5 @@
-// 商品グループ情報のGET
-package handlers
+// 商品情報のGET
+package get
 
 import (
 	"Go_APIServer/db"
@@ -11,18 +11,18 @@ import (
 )
 
 // レスポンスに変換する構造体
-type GetGroupResponseBody struct {
-	Message string                 `json:"message"`
-	Length  int                    `json:"length"`
-	Group   []db.ProductGroupModel `json:"group"`
+type GetProductResponseBody struct {
+	Message string
+	Length  int
+	Product []db.ProductModel
 }
 
-var get_group_cnt int // ShopGetの呼び出しカウント
+var get_product_cnt int // GetProductの呼び出しカウント
 
-func GetGroup(w http.ResponseWriter, r *http.Request) {
-	get_group_cnt++
+func GetProduct(w http.ResponseWriter, r *http.Request) {
+	get_product_cnt++
 	var (
-		group   []db.ProductGroupModel
+		product []db.ProductModel
 		status  int
 		message string
 		err     error
@@ -31,10 +31,10 @@ func GetGroup(w http.ResponseWriter, r *http.Request) {
 	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
-		res := GetGroupResponseBody{
+		res := GetProductResponseBody{
 			Message: message,
-			Length:  len(group),
-			Group:   group,
+			Length:  len(product),
+			Product: product,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -46,16 +46,16 @@ func GetGroup(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		fmt.Printf("[Get Group.%d][%d] %s\n", get_group_cnt, status, message)
+		fmt.Printf("[Get Product.%d][%d] %s\n", get_product_cnt, status, message)
 	}()
 
 	// リクエストパラメータの取得
-	shop_str := r.FormValue("shop_id")
+	group_str := r.FormValue("group_id")
 
 	// パラメータが空でない場合はIntに変換
-	var shop_id int
-	if shop_str != "" {
-		shop_id, err = strconv.Atoi(shop_str)
+	var group_id int
+	if group_str != "" {
+		group_id, err = strconv.Atoi(group_str)
 		if err != nil {
 			status = http.StatusBadRequest
 			message = fmt.Sprint("不正なパラメータ : ", err)
@@ -79,14 +79,14 @@ func GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// shopパラメータが"0"のときテーブルの内容を一括取得
+	// groupパラメータが"0"のときテーブルの内容を一括取得
 	// "0"以外のときはパラメータで指定した情報を取得
-	if shop_id == 0 {
-		group, err = client.ProductGroup.FindMany().Exec(ctx)
+	if group_id == 0 {
+		product, err = client.Product.FindMany().Exec(ctx)
 
 	} else {
-		group, err = client.ProductGroup.FindMany(
-			db.ProductGroup.ShopID.Equals(shop_id),
+		product, err = client.Product.FindMany(
+			db.Product.GroupID.Equals(group_id),
 		).Exec(ctx)
 	}
 	if err != nil {
@@ -96,7 +96,7 @@ func GetGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 取得した情報がないとき
-	if len(group) == 0 {
+	if len(product) == 0 {
 		status = http.StatusBadRequest
 		message = "商品グループ情報がありません"
 		return

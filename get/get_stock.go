@@ -1,5 +1,5 @@
-// 値段情報のGET
-package handlers
+// 在庫情報のGET
+package get
 
 import (
 	"Go_APIServer/db"
@@ -11,30 +11,32 @@ import (
 )
 
 // レスポンスに変換する構造体
-type GetPriceResponseBody struct {
+type GetStockResponseBody struct {
 	Message string          `json:"message"`
 	Length  int             `json:"length"`
-	Price   []db.PriceModel `json:"price"`
+	Stock   []db.StockModel `json:"stock"`
 }
 
-var get_price_cnt int // GetPriceの呼び出しカウント
+var get_stock_cnt int // orderGETのカウント用
 
-func GetPrice(w http.ResponseWriter, r *http.Request) {
-	get_price_cnt++
+func GetStock(w http.ResponseWriter, r *http.Request) {
+	get_stock_cnt++
 	var (
-		price   []db.PriceModel
+		stock   []db.StockModel
 		status  int
 		message string
 		err     error
 	)
 
-	// リクエスト処理後のレスポンス作成
+	fmt.Printf("* Get Stock No.%d *\n", get_stock_cnt)
+
+	// リクエスト処理後のレスポンス処理
 	defer func() {
 		// レスポンスボディの作成
-		res := GetPriceResponseBody{
+		res := GetStockResponseBody{
 			Message: message,
-			Length:  len(price),
-			Price:   price,
+			Length:  len(stock),
+			Stock:   stock,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -46,16 +48,16 @@ func GetPrice(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		fmt.Printf("[Get Price.%d][%d] %s\n", get_price_cnt, status, message)
+		fmt.Printf("[Get Stock.%d][%d] %s\n", get_stock_cnt, status, message)
 	}()
 
 	// リクエストパラメータの取得
-	product_str := r.FormValue("product_id")
+	price_str := r.FormValue("price_id")
 
 	// パラメータが空でない場合はIntに変換
-	var product_id int
-	if product_str != "" {
-		product_id, err = strconv.Atoi(product_str)
+	var price_id int
+	if price_str != "" {
+		price_id, err = strconv.Atoi(price_str)
 		if err != nil {
 			status = http.StatusBadRequest
 			message = fmt.Sprint("不正なパラメータ : ", err)
@@ -79,14 +81,14 @@ func GetPrice(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// productパラメータが"0"のときテーブルの内容を一括取得
+	// priceパラメータが"0"のときテーブルの内容を一括取得
 	// "0"以外のときはパラメータで指定した情報を取得
-	if product_id == 0 {
-		price, err = client.Price.FindMany().Exec(ctx)
+	if price_id == 0 {
+		stock, err = client.Stock.FindMany().Exec(ctx)
 
 	} else {
-		price, err = client.Price.FindMany(
-			db.Price.ProductID.Equals(product_id),
+		stock, err = client.Stock.FindMany(
+			db.Stock.PriceID.Equals(price_id),
 		).Exec(ctx)
 	}
 	if err != nil {
@@ -96,7 +98,7 @@ func GetPrice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 取得した情報がないとき
-	if len(price) == 0 {
+	if len(stock) == 0 {
 		status = http.StatusBadRequest
 		message = "商品グループ情報がありません"
 		return

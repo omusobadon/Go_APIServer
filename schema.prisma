@@ -27,6 +27,7 @@ model ProductGroup {
   shop_id Int
   name String
   start_before Int @default(24)
+  invalid_duration Int @default(0)
   available_duration Int @default(72)
   unit_time Int?
   max_time Int?
@@ -80,7 +81,7 @@ model Seat {
 
   product Product @relation(fields: [product_id], references: [id])
   order_detail OrderDetail[]
-  reserved_seat ReservedSeat[]
+  reserved_seat SeatReservation[]
 
   @@unique([product_id, row, column])
 }
@@ -98,9 +99,22 @@ model Stock {
 
   price Price @relation(fields: [price_id], references: [id])
   order_detail OrderDetail[]
-  reserved_seat ReservedSeat[]
+  reserved_seat SeatReservation[]
 
   @@unique([price_id, name])
+}
+
+// SeatReservation(シート予約)テーブル
+model SeatReservation {
+  id Int @id @default(autoincrement())
+  stock_id Int
+  seat_id Int
+  is_reserved Boolean @default(false)
+
+  stock Stock @relation(fields: [stock_id], references: [id])
+  seat Seat @relation(fields: [seat_id], references: [id])
+
+  @@unique([stock_id, seat_id])
 }
 
 // Customer(顧客情報)テーブル
@@ -176,15 +190,6 @@ model ReservationEnd {
   created_at DateTime @db.Timestamptz(3) @default(now())
 
   order Order @relation(fields: [order_id], references: [id])
-}
-
-model ReservedSeat {
-  id Int @id @default(autoincrement())
-  stock_id Int
-  seat_id Int
-
-  stock Stock @relation(fields: [stock_id], references: [id])
-  seat Seat @relation(fields: [seat_id], references: [id])
 }
 
 // EditInfo(テーブル編集履歴)テーブル

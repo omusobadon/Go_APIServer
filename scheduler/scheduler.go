@@ -1,19 +1,21 @@
 // 在庫情報を監視するタスクスケジューラ
 // 現在はStockテーブルのEnd時刻と同期している
-package main
+package scheduler
 
 import (
 	"Go_APIServer/db"
+	"Go_APIServer/funcs"
+	"Go_APIServer/ini"
 	"context"
 	"fmt"
 	"time"
 )
 
-func scheduler() error {
+func Scheduler() error {
 	var cnt int
-	delay := time.Duration(OPTIONS.Default_delay) * time.Second
+	delay := time.Duration(ini.OPTIONS.Default_delay) * time.Second
 
-	fmt.Println("Scheduler started! delay time :", delay)
+	fmt.Println("[Scheduler start] delay time :", delay)
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -34,7 +36,7 @@ func scheduler() error {
 
 		// Stockテーブルで、現在時刻よりも後の情報を取得
 		stock, err := client.Stock.FindMany(
-			db.Stock.EndAt.After(GetTime()),
+			db.Stock.EndAt.After(funcs.GetTime()),
 		).Exec(ctx)
 		if err != nil {
 			return fmt.Errorf("在庫テーブル取得エラー : %w", err)
@@ -65,7 +67,7 @@ func scheduler() error {
 		}
 
 		// 現在時刻との間隔を求める
-		duration := se.Sub(GetTime())
+		duration := se.Sub(funcs.GetTime())
 
 		// durationがdelayよりも短い場合
 		// その間隔分遅延し、遅延後にタスク処理を実行

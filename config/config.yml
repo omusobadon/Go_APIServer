@@ -1,16 +1,16 @@
 # ユーザによる時刻指定を有効にするか
 # 有効にするとStockの開始・終了時刻は無効となる
-time_free_enable bool: true
+time_free_enable: false
 
 # 座席指定を有効にするか
-seat_enable bool: false
+seat_enable: true
 
 # 決済処理をするか
-payment_enable bool: false
+payment_enable: false
 
 # 予約時間終了後にユーザに終了処理をさせるか
 # ユーザが終了処理をするまで在庫は戻らない
-user_end_enable bool: false
+user_end_enable: false
 
 # タスクスケジューラの遅延時間(s)
-default_delay: 20
+default_delay: 60

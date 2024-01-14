@@ -1,4 +1,4 @@
-package handlers
+package get
 
 import (
 	"Go_APIServer/db"

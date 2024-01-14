@@ -1,5 +1,5 @@
-// 店舗情報のGET
-package handlers
+// 商品グループ情報のGET
+package get
 
 import (
 	"Go_APIServer/db"
@@ -10,29 +10,30 @@ import (
 )
 
 // レスポンスに変換する構造体
-type GetShopResponseBody struct {
-	Message string         `json:"message"`
-	Length  int            `json:"length"`
-	Shop    []db.ShopModel `json:"shop"`
+type GetCustomerResponseBody struct {
+	Message  string             `json:"message"`
+	Length   int                `json:"length"`
+	Customer []db.CustomerModel `json:"customer"`
 }
 
-var get_shop_cnt int // GetShopの呼び出しカウント
+var get_customer_cnt int // ShopGetの呼び出しカウント
 
-func GetShop(w http.ResponseWriter, r *http.Request) {
-	get_shop_cnt++
+func GetCustomer(w http.ResponseWriter, r *http.Request) {
+	get_customer_cnt++
 	var (
-		shop    []db.ShopModel
-		status  int
-		message string
+		customer []db.CustomerModel
+		status   int
+		message  string
+		err      error
 	)
 
 	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
-		res := GetShopResponseBody{
-			Message: message,
-			Length:  len(shop),
-			Shop:    shop,
+		res := GetCustomerResponseBody{
+			Message:  message,
+			Length:   len(customer),
+			Customer: customer,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -44,7 +45,7 @@ func GetShop(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		fmt.Printf("[Get Shop.%d][%d] %s\n", get_shop_cnt, status, message)
+		fmt.Printf("[Get Customer.%d][%d] %s\n", get_customer_cnt, status, message)
 	}()
 
 	// データベース接続用クライアントの作成
@@ -63,13 +64,19 @@ func GetShop(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Shopテーブルの内容を一括取得
-	shop, err := client.Shop.FindMany().Exec(ctx)
+	customer, err = client.Customer.FindMany().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("店舗テーブル取得エラー : ", err)
+		message = fmt.Sprint("Customerテーブル取得エラー : ", err)
 		return
 	}
+
+	// 取得した情報がないとき
+	// if len(customer) == 0 {
+	// 	status = http.StatusBadRequest
+	// 	message = "顧客情報がありません"
+	// 	return
+	// }
 
 	status = http.StatusOK
 	message = "正常終了"

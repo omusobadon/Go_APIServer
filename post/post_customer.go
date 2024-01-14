@@ -1,5 +1,5 @@
 // 顧客情報のPOST
-package handlers
+package post
 
 import (
 	"Go_APIServer/db"

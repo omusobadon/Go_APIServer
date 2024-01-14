@@ -1,5 +1,5 @@
 // 座席情報のGET
-package handlers
+package get
 
 import (
 	"Go_APIServer/db"
