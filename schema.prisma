@@ -28,7 +28,6 @@ model ProductGroup {
   name String
   start_before Int @default(24)
   invalid_duration Int @default(0)
-  available_duration Int @default(72)
   unit_time Int?
   max_time Int?
   interval Int?

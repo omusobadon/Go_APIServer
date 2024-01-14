@@ -22,10 +22,10 @@ const (
 	stock_name   string = "time"
 
 	// 自動生成する数。テーブルに1行でも情報がある場合は生成されない。
-	shop_num    int = 3 // 店舗
-	group_num   int = 3 // 商品グループ
+	shop_num    int = 1 // 店舗
+	group_num   int = 1 // 商品グループ
 	product_num int = 3 // 商品
-	price_num   int = 3 // 価格
+	price_num   int = 1 // 価格
 	seat_row    int = 3 // 座席（行）
 	seat_column int = 5 // 座席（列）
 	stock_num   int = 3 // 在庫

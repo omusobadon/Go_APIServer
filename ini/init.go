@@ -25,7 +25,7 @@ type Options struct {
 }
 
 // 商品・在庫テーブルが空の場合、自動生成するかどうか（テスト用）
-const auto_insert bool = false
+const auto_insert bool = true
 
 // オプションの読み込み
 func ReadOptions() error {

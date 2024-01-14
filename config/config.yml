@@ -3,7 +3,7 @@
 time_free_enable: false
 
 # 座席指定を有効にするか
-seat_enable: true
+seat_enable: false
 
 # 決済処理をするか
 payment_enable: false

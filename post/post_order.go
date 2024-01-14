@@ -208,46 +208,56 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Productテーブルの予約開始可能期間(start_before)から予約開始可能時刻を計算
-		start_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.StartBefore)
-		start := now.Add(start_dur * time.Hour)
-
-		// 予約可能期間の終了時刻を計算
-		end_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.AvailableDuration)
-		end := start.Add(end_dur * time.Hour)
-
-		fmt.Printf("start : %v, end : %v\n", start, end)
+		// Productテーブルのstart_beforeとinvalid_durationを取得
+		start_before_dur := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.StartBefore)
+		invalid_duration := time.Duration(stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.InvalidDuration)
 
 		// ユーザによる時刻指定が有効の場合は、リクエストstart_atから予約可能か判断
 		// 無効の場合は、Stockのstart_atから判断
 		if options.Time_free_enable {
 
-			// 予約開始時刻が予約開始可能時刻より前のとき
-			if req.Start.Before(start) {
-				status = http.StatusBadRequest
-				message = "予約開始時刻までが短すぎます"
-				return
-			}
+			// 予約可能期間を計算
+			start := req.Start.Add(start_before_dur * time.Hour * -1)
+			end := req.Start.Add(invalid_duration * time.Hour * -1)
 
-			// 予約開始時刻が予約可能期間より後のとき
-			if req.Start.After(end) {
+			// fmt.Printf("start: %v, end: %v\n", start, end)
+
+			// 現在時刻が予約開始可能時刻より前のとき
+			if now.Before(start) {
 				status = http.StatusBadRequest
 				message = "まだ予約できません"
 				return
 			}
 
-		} else {
-			// 予約開始時刻が予約開始可能時刻より前のとき
-			if s, _ := stock.StartAt(); s.Before(start) {
+			// 現在時刻が予約可能期間より後のとき
+			if now.After(end) {
 				status = http.StatusBadRequest
-				message = "予約受付期間外です"
+				message = "予約受付時刻を過ぎました"
 				return
 			}
 
-			// 予約開始時刻が予約可能期間より後のとき
-			if e, _ := stock.StartAt(); e.After(end) {
+		} else {
+
+			// 予約可能期間を計算
+			s, _ := stock.StartAt()
+			start := s.Add(start_before_dur * time.Hour * -1)
+
+			e, _ := stock.StartAt()
+			end := e.Add(invalid_duration * time.Hour * -1)
+
+			fmt.Printf("start: %v, end: %v\n", start, end)
+
+			// 現在時刻が予約開始可能時刻より前のとき
+			if now.Before(start) {
 				status = http.StatusBadRequest
-				message = "予約受付期間外です"
+				message = "まだ予約できません"
+				return
+			}
+
+			// 現在時刻が予約可能期間より後のとき
+			if now.After(end) {
+				status = http.StatusBadRequest
+				message = "予約受付時刻を過ぎました"
 				return
 			}
 		}
