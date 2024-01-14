@@ -172,6 +172,12 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var test []db.RawStockModel
+	err = client.Prisma.QueryRaw("BEGIN").Exec(ctx, &test)
+	if err != nil {
+		fmt.Println("エラー")
+	}
+
 	// 注文処理
 	for _, v := range req.Detail {
 
@@ -324,13 +330,17 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			).Update(
 				db.Stock.Qty.Set(qty - v.Qty),
 			).Exec(ctx)
+
 			if err != nil {
+				_ = client.Prisma.QueryRaw("ROLLBACK").Exec(ctx, test)
 				status = http.StatusBadRequest
 				message = fmt.Sprint("在庫テーブルアップデートエラー : ", err)
 				return
 			}
 		}
 	}
+
+	_ = client.Prisma.QueryRaw("COMMIT").Exec(ctx, test)
 
 	// Orderテーブルに注文情報をインサート
 	order, err = client.Order.CreateOne(
