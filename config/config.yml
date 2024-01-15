@@ -1,6 +1,6 @@
 # ユーザによる時刻指定を有効にするか
 # 有効にするとStockの開始・終了時刻は無効となる
-time_free_enable: false
+time_free_enable: true
 
 # 座席指定を有効にするか
 seat_enable: false

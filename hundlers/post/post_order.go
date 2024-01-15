@@ -236,6 +236,36 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			// 終了時間 - 開始時間
+			time_sub := req.End.Sub(req.Start)
+
+			// unit_time(時間単位)通りかチェック
+			unit_time, ok := stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.UnitTime()
+			if ok {
+				if unit_time == 0 {
+					// unit_timeが0なら何もしない
+
+				} else {
+					div := int(time_sub.Minutes()) % unit_time
+
+					if div != 0 {
+						status = http.StatusBadRequest
+						message = "指定された時間単位ではありません"
+						return
+					}
+				}
+			}
+
+			// max_time(最大予約時間)以内かチェック
+			max_time, ok := stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.MaxTime()
+			if ok {
+				if time_sub > (time.Duration(max_time) * time.Hour) {
+					status = http.StatusBadRequest
+					message = "最大予約時間を超過しています"
+					return
+				}
+			}
+
 		} else {
 
 			// 予約可能期間を計算

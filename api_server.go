@@ -1,8 +1,10 @@
 package main
 
 import (
-	"Go_APIServer/get"
-	"Go_APIServer/post"
+	"Go_APIServer/hundlers/delete"
+	"Go_APIServer/hundlers/get"
+	"Go_APIServer/hundlers/post"
+	"Go_APIServer/hundlers/put"
 	"fmt"
 	"net/http"
 	"time"
@@ -54,9 +56,18 @@ func APIServer() error {
 	http.HandleFunc("/post_order", CORSMiddleware(post.PostOrder))
 	http.HandleFunc("/post_customer", CORSMiddleware(post.PostCustomer))
 
-	// http.HandleFunc("/order_change", post.OrderChange)
-	// http.HandleFunc("/manage_get", post.ManageGet)
-	// http.HandleFunc("/manage_post", post.ManagePost)
+	// PUT
+	http.HandleFunc("/create_shop", CORSMiddleware(put.CreateShop))
+	http.HandleFunc("/create_group", CORSMiddleware(put.CreateGroup))
+	http.HandleFunc("/create_customer", CORSMiddleware(put.CreateCustomer))
+
+	http.HandleFunc("/update_customer", CORSMiddleware(put.UpdateCustomer))
+
+	// DELETE
+	http.HandleFunc("/delete_stock", CORSMiddleware(delete.DeleteStock))
+	http.HandleFunc("/delete_customer", CORSMiddleware(delete.DeleteCustomer))
+	http.HandleFunc("/delete_detail", CORSMiddleware(delete.DeleteDetail))
+
 	http.HandleFunc("/test", post.Test)
 
 	// サーバの起動
