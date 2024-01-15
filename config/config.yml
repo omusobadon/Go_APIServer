@@ -13,4 +13,4 @@ payment_enable: false
 user_end_enable: false
 
 # タスクスケジューラの遅延時間(s)
-default_delay: 60
+delay: 10
