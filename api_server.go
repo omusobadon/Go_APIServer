@@ -54,7 +54,6 @@ func APIServer() error {
 
 	// POST
 	http.HandleFunc("/post_order", CORSMiddleware(post.PostOrder))
-	http.HandleFunc("/post_customer", CORSMiddleware(post.PostCustomer))
 
 	// PUT
 	http.HandleFunc("/create_shop", CORSMiddleware(put.CreateShop))
