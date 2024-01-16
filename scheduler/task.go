@@ -6,7 +6,9 @@ import (
 	"fmt"
 )
 
-func (o order) task(c *db.PrismaClient) error {
+func (o orderForTask) task(c *db.PrismaClient) error {
+	fmt.Println("orderForTask is called")
+
 	// ctx := context.Background()
 
 	// 在庫数をデフォルトの個数にリセット
@@ -26,12 +28,11 @@ func (o order) task(c *db.PrismaClient) error {
 
 	// fmt.Printf("test : %+v", test[0].Stock())
 
-	fmt.Println("task is called")
-
 	return nil
 }
 
-func (s stock) task(c *db.PrismaClient) error {
+func (s stockForTask) task(c *db.PrismaClient) error {
+	fmt.Println("stockForTask is called")
 
 	return nil
 }

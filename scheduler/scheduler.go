@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-type order struct {
+type orderForTask struct {
 	orders []db.OrderModel
 }
 
-type stock struct {
-	id int
+type stockForTask struct {
+	stocks []db.StockModel
 }
 
 func Scheduler() {
@@ -77,7 +77,7 @@ func Scheduler() {
 		} else {
 
 			// Stockテーブルで、現在時刻よりも後の情報を取得
-			stock, err := client.Stock.FindMany(
+			stocks, err := client.Stock.FindMany(
 				db.Stock.EndAt.After(funcs.GetTime()),
 			).Exec(ctx)
 			if err != nil {
@@ -86,26 +86,22 @@ func Scheduler() {
 			}
 
 			// 現在より後の情報がない場合
-			if len(stock) == 0 {
+			if len(stocks) == 0 {
 				fmt.Printf("[Sceduler.%d] 更新予定なし\n", cnt)
 				time.Sleep(delay)
 				continue
 			}
 
-			// 比較用にStockテーブルの1行をセット
-			stock_one := stock[0]
-			var ve time.Time
-			var se time.Time
+			// 比較用にStockテーブルの最初の1行を基準としてセット
+			update_time, _ = stocks[0].EndAt()
 
-			for _, value := range stock {
-				// fmt.Printf("index : %d, value : %+v\n", index, value)
+			for _, s := range stocks {
 
-				ve, _ = value.EndAt()
-				se, _ = stock_one.EndAt()
+				compared_time, _ := s.EndAt()
 
 				// 終了時刻がより早い場合はその行を新たにセット
-				if ve.Before(se) {
-					stock_one = value
+				if compared_time.Before(update_time) {
+					update_time = compared_time
 				}
 			}
 		}
@@ -122,7 +118,7 @@ func Scheduler() {
 			if ini.OPTIONS.Time_free_enable {
 
 				// update_timeに一致するOrderを取得
-				var order order
+				var order orderForTask
 				order.orders, _ = client.Order.FindMany(
 					db.Order.EndAt.Equals(update_time),
 				).Exec(ctx)
@@ -131,12 +127,19 @@ func Scheduler() {
 					fmt.Printf("[Sceduler.%d] 更新エラー : %s\n", cnt, err)
 					return
 				}
-			}
 
-			// if err := task(client, stock_id); err != nil {
-			// 	fmt.Printf("[Sceduler.%d] 更新エラー : %s\n", cnt, err)
-			// 	return
-			// }
+			} else {
+
+				var stock stockForTask
+				stock.stocks, _ = client.Stock.FindMany(
+					db.Stock.EndAt.Equals(update_time),
+				).Exec(ctx)
+
+				if err := stock.task(client); err != nil {
+					fmt.Printf("[Sceduler.%d] 更新エラー : %s\n", cnt, err)
+					return
+				}
+			}
 
 			fmt.Printf("[Sceduler.%d] 更新完了\n", cnt)
 
