@@ -326,7 +326,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 			// SeatReservationを取得
 			reserv, err := client.SeatReservation.FindUnique(
-				db.SeatReservation.StockIdseatID(
+				db.SeatReservation.StockIDSeatID(
 					db.SeatReservation.StockID.Equals(v.Stock),
 					db.SeatReservation.SeatID.Equals(v.Seat),
 				),
@@ -345,7 +345,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 			} else {
 				_, err := client.SeatReservation.FindUnique(
-					db.SeatReservation.StockIdseatID(
+					db.SeatReservation.StockIDSeatID(
 						db.SeatReservation.StockID.Equals(v.Stock),
 						db.SeatReservation.SeatID.Equals(v.Seat),
 					),
