@@ -112,8 +112,6 @@ func Scheduler() {
 		// durationがdelayよりも短い場合
 		// その間隔分遅延し、遅延後にタスク処理を実行
 		if duration < delay {
-			fmt.Printf("[Sceduler.%d] 更新予定: %v後\n", cnt, duration)
-			time.Sleep(duration)
 
 			if ini.OPTIONS.Time_free_enable {
 
@@ -122,6 +120,9 @@ func Scheduler() {
 				order.orders, _ = client.Order.FindMany(
 					db.Order.EndAt.Equals(update_time),
 				).Exec(ctx)
+
+				fmt.Printf("[Sceduler.%d] 更新予定: %v後, 要素数: %d\n", cnt, duration, len(order.orders))
+				time.Sleep(duration)
 
 				if err := order.task(client); err != nil {
 					fmt.Printf("[Sceduler.%d] 更新エラー : %s\n", cnt, err)
@@ -134,6 +135,9 @@ func Scheduler() {
 				stock.stocks, _ = client.Stock.FindMany(
 					db.Stock.EndAt.Equals(update_time),
 				).Exec(ctx)
+
+				fmt.Printf("[Sceduler.%d] 更新予定: %v後, 要素数: %d\n", cnt, duration, len(stock.stocks))
+				time.Sleep(duration)
 
 				if err := stock.task(client); err != nil {
 					fmt.Printf("[Sceduler.%d] 更新エラー : %s\n", cnt, err)
