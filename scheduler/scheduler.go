@@ -20,6 +20,7 @@ type stockForTask struct {
 func Scheduler() {
 	var cnt int
 	delay := time.Duration(ini.OPTIONS.Delay) * time.Second
+	allowable_error := time.Duration(ini.OPTIONS.Allowable_error) * time.Second
 
 	fmt.Println("[Scheduler start] delay time :", delay)
 
@@ -111,7 +112,7 @@ func Scheduler() {
 
 		// durationがdelayよりも短い場合
 		// その間隔分遅延し、遅延後にタスク処理を実行
-		if duration < delay {
+		if duration < delay+allowable_error {
 
 			if ini.OPTIONS.Time_free_enable {
 

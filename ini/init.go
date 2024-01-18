@@ -22,6 +22,7 @@ type Options struct {
 	User_notification bool
 	Timezone          string
 	Delay             int
+	Allowable_error   int
 }
 
 // 商品・在庫テーブルが空の場合、自動生成するかどうか（テスト用）

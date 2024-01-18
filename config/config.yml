@@ -1,6 +1,6 @@
 # ユーザによる時刻指定を有効にするか
 # 有効にするとStockの開始・終了時刻は無効となる
-time_free_enable: true
+time_free_enable: false
 
 # 座席指定を有効にするか
 seat_enable: false
@@ -14,3 +14,6 @@ user_end_enable: false
 
 # タスクスケジューラの遅延時間(s)
 delay: 20
+
+# スケジューラの許容誤差(s)
+allowable_error: 2
