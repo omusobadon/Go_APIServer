@@ -19,10 +19,10 @@ type stockForTask struct {
 
 func Scheduler() {
 	var cnt int
-	delay := time.Duration(ini.OPTIONS.Delay) * time.Second
-	allowable_error := time.Duration(ini.OPTIONS.Allowable_error) * time.Second
+	delay := time.Duration(ini.Options.Delay) * time.Second
+	allowable_error := time.Duration(ini.Options.Margin) * time.Second
 
-	fmt.Println("[Scheduler start] delay time :", delay)
+	fmt.Println("[Scheduler start]")
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -44,7 +44,7 @@ func Scheduler() {
 
 		// ユーザによる時刻指定が有効な場合はOrderのend_atを監視
 		// そうでない場合はStockを監視
-		if ini.OPTIONS.Time_free_enable {
+		if ini.Options.Time_free_enable {
 
 			// Orderテーブルで、現在時刻よりも後の情報を取得
 			orders, err := client.Order.FindMany(
@@ -114,7 +114,7 @@ func Scheduler() {
 		// その間隔分遅延し、遅延後にタスク処理を実行
 		if duration < delay+allowable_error {
 
-			if ini.OPTIONS.Time_free_enable {
+			if ini.Options.Time_free_enable {
 
 				// update_timeに一致するOrderを取得
 				var order orderForTask
@@ -149,7 +149,7 @@ func Scheduler() {
 			fmt.Printf("[Sceduler.%d] 更新完了\n", cnt)
 
 		} else {
-			fixed_time := update_time.In(time.Local)
+			fixed_time := update_time.In(ini.Timezone)
 			fmt.Printf("[Sceduler.%d] 更新予定: %v (%v後)\n", cnt, fixed_time, duration)
 			time.Sleep(delay)
 		}

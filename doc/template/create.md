@@ -3,11 +3,10 @@
 ## create_shop
 ```json
 {
-    "name": "test",
-    "mail": "test",
-    "phone": "test",
-    "password": "test",
-    "address": "test"
+    "name": "Shop Name",
+    "mail": "shop@domain.jp",
+    "phone": "XXXX-XX-XXXX",
+    "address": "Tokyo"
 }
 ```
 
@@ -15,7 +14,7 @@
 ```json
 {
     "shop_id": 1,
-    "name": "test",
+    "name": "Group Name",
     "start_before": 24,
     "invalid_duration": 0,
     "unit_time": 60,
@@ -28,10 +27,10 @@
 ```json
 {
     "group_id": 1,
-    "name": "test",
+    "name": "Product Name",
     "max_people": 1,
-    "qty": 5,
-    "remark": "test"
+    "qty": 10,
+    "remark": "remark"
 }
 ```
 
@@ -39,10 +38,10 @@
 ```json
 {
     "product_id": 1,
-    "name": "test",
+    "name": "Price Name",
     "value": 1000,
     "tax": 10,
-    "remark": "test"
+    "remark": "remark"
 }
 ```
 
@@ -50,10 +49,10 @@
 ```json
 {
     "product_id": 1,
-    "row": "test",
-    "column": "test",
+    "row": "A",
+    "column": "1",
     "is_enable": true,
-    "remark": "test"
+    "remark": "remark"
 }
 ```
 
@@ -61,10 +60,10 @@
 ```json
 {
     "price_id": 1,
-    "name": "test",
-    "qty": 4,
-    "start_at": true,
-    "start_at": true,
+    "name": "Stock Name",
+    "qty": 10,
+    "start_at": "2024-01-20T16:00:00+09:00",
+    "end_at": "2024-01-20T18:00:00+09:00",
     "is_enable": true
 }
 ```
@@ -72,11 +71,11 @@
 ## create_customer
 ```json
 {
-    "name": "test",
-    "mail": "test",
-    "phone": "test",
-    "password": "test",
-    "address": "test",
-    "payment_info": "test"
+    "name": "Customer Name",
+    "mail": "customer@domain.jp",
+    "phone": "XXXX-XX-XXXX",
+    "password": "PASSWORD",
+    "address": "Tokyo",
+    "payment_info": "Pay"
 }
 ```

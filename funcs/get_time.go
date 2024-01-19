@@ -2,6 +2,7 @@
 package funcs
 
 import (
+	"Go_APIServer/ini"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,40 +12,48 @@ import (
 
 // World Time APIからのレスポンスを変換するための構造体
 type TimeResponse struct {
-	Dateline string `json:"datetime"`
+	Datetime string `json:"datetime"`
+}
+
+func GetTime() time.Time {
+
+	got_time, err := GetTimeFromAPI()
+	if err != nil {
+		fmt.Println("APIからの時刻取得に失敗:", err)
+		fmt.Println("システム時刻を使用")
+
+		return time.Now().In(ini.Timezone)
+	}
+
+	fixed_time := got_time.In(ini.Timezone)
+
+	return fixed_time
 }
 
 // World Time APIから時刻を取得し返却
-func GetTime() time.Time {
-	resp, err := http.Get("http://worldtimeapi.org/api/timezone/Asia/Tokyo")
-	if err != nil {
-		fmt.Println("時刻取得エラー : ", err)
+func GetTimeFromAPI() (*time.Time, error) {
 
-		// エラーが出た場合はシステム時刻を返す
-		return time.Now()
+	res, err := http.Get("http://worldtimeapi.org/api/timezone/UTC")
+	if err != nil {
+		return nil, err
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(io.Reader(resp.Body))
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(io.Reader(res.Body))
 	if err != nil {
-		fmt.Println("レスポンス読み込みエラー : ", err)
-
-		return time.Now()
+		return nil, err
 	}
 
 	var time_res TimeResponse
 	if err := json.Unmarshal(body, &time_res); err != nil {
-		fmt.Println("レスポンスの構造体変換エラー : ", err)
-
-		return time.Now()
+		return nil, err
 	}
 
-	time_parsed, err := time.Parse(time.RFC3339, time_res.Dateline)
+	time_parsed, err := time.Parse(time.RFC3339, time_res.Datetime)
 	if err != nil {
-		fmt.Println("時刻の解析エラー : ", err)
-
-		return time.Now()
+		return nil, err
 	}
 
-	return time_parsed
+	return &time_parsed, nil
 }

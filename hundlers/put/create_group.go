@@ -87,21 +87,26 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// リクエストの中身が存在するか確認
-	// if req.Name == nil {
-	// 	status = http.StatusBadRequest
-	// 	message = "name is null"
-	// 	return
-	// }
-	// if req.Mail == nil {
-	// 	status = http.StatusBadRequest
-	// 	message = "mail is null"
-	// 	return
-	// }
-	// if req.Phone == nil {
-	// 	status = http.StatusBadRequest
-	// 	message = "phone is null"
-	// 	return
-	// }
+	if req.Shop == nil {
+		status = http.StatusBadRequest
+		message = "shop_id is null"
+		return
+	}
+	if req.Name == nil {
+		status = http.StatusBadRequest
+		message = "name is null"
+		return
+	}
+	if req.Start == nil {
+		status = http.StatusBadRequest
+		message = "start_before is null"
+		return
+	}
+	if req.Invalid == nil {
+		status = http.StatusBadRequest
+		message = "invalid_duration is null"
+		return
+	}
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()

@@ -1,19 +1,34 @@
 # ユーザによる時刻指定を有効にするか
 # 有効にするとStockの開始・終了時刻は無効となる
-time_free_enable: false
+time_free_enable: true
 
 # 座席指定を有効にするか
 seat_enable: false
 
+# 予約注文を保留するか
+hold_enable: false
+
 # 決済処理をするか
 payment_enable: false
 
-# 予約時間終了後にユーザに終了処理をさせるか
+# 予約期間終了時にユーザに終了処理をさせるか
 # ユーザが終了処理をするまで在庫は戻らない
 user_end_enable: false
 
-# タスクスケジューラの遅延時間(s)
-delay: 20
+# 予約期間終了時にユーザへ通知を送るか
+user_notification: false
 
-# スケジューラの許容誤差(s)
-allowable_error: 2
+# スケジューラの時刻チェック間隔(s)
+delay: 60
+
+# スケジューラの時刻チェックマージン(s)
+margin: 2
+
+# ローカル時間を使用するか（使用すると下のTZ設定は無効）
+local_time_enable: true
+
+# タイムゾーン名（これを基にゾーン解析を行う）
+timezone: "Asia/Tokyo"
+
+# 時差（解析を行えなかった場合に使用）
+time_difference: 9

@@ -6,30 +6,34 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
 
-var OPTIONS Options
+var Options LoadedOptions
+var Timezone *time.Location
 
 // config.ymlデコード用構造体
-type Options struct {
-	Time_free_enable  bool
-	Seat_enable       bool
-	Hold_enable       bool
-	Payment_enable    bool
-	User_end_enable   bool
-	User_notification bool
-	Timezone          string
-	Delay             int
-	Allowable_error   int
+type LoadedOptions struct {
+	Time_free_enable  bool   `yaml:"time_free_enable"`
+	Seat_enable       bool   `yaml:"seat_enable"`
+	Hold_enable       bool   `yaml:"hold_enable"`
+	Payment_enable    bool   `yaml:"payment_enable"`
+	User_end_enable   bool   `yaml:"user_end_enable"`
+	User_notification bool   `yaml:"user_notification"`
+	Delay             int    `yaml:"delay"`
+	Margin            int    `yaml:"margin"`
+	Local_time_enable bool   `yaml:"local_time_enable"`
+	Timezone          string `yaml:"timezone"`
+	Time_difference   int    `yaml:"time_difference"`
 }
 
 // 商品・在庫テーブルが空の場合、自動生成するかどうか（テスト用）
 const auto_insert bool = true
 
 // オプションの読み込み
-func ReadOptions() error {
+func LoadOptions() error {
 
 	// config.ymlの読み込み
 	content, err := os.ReadFile("config/config.yml")
@@ -38,13 +42,42 @@ func ReadOptions() error {
 	}
 
 	// ymlのデコード
-	err = yaml.Unmarshal(content, &OPTIONS)
+	err = yaml.Unmarshal(content, &Options)
 	if err != nil {
 		return err
 	}
 
+	// ローカルタイムの設定
+	if Options.Local_time_enable {
+		Timezone = time.Local
+
+	} else {
+		Timezone, err = time.LoadLocation(Options.Timezone)
+		if err != nil {
+			Timezone = time.FixedZone(Options.Timezone, Options.Time_difference*60*60)
+		}
+	}
+
 	// optionの確認
-	fmt.Printf("OPTIONS: %+v\n", OPTIONS)
+	fmt.Println("[Option]")
+	// fmt.Printf("Options: %+v\n", Options)
+
+	fmt.Print("ユーザ時刻指定: ")
+	if Options.Time_free_enable {
+		fmt.Println("有効")
+	} else {
+		fmt.Println("無効")
+	}
+
+	fmt.Print("座席指定: ")
+	if Options.Seat_enable {
+		fmt.Println("有効")
+	} else {
+		fmt.Println("無効")
+	}
+
+	fmt.Printf("スケジューラチェック間隔: %ds, マージン: %ds\n", Options.Delay, Options.Margin)
+	fmt.Println("タイムゾーン:", Timezone)
 
 	return nil
 }
@@ -119,7 +152,7 @@ func init() {
 	fmt.Println("[Init start]")
 
 	// オプションの読み込み
-	if err := ReadOptions(); err != nil {
+	if err := LoadOptions(); err != nil {
 		panic(fmt.Sprint("オプション読み込みエラー: ", err))
 	}
 
@@ -132,7 +165,7 @@ func init() {
 	}
 
 	// SeatReservationの作成
-	if OPTIONS.Seat_enable {
+	if Options.Seat_enable {
 		err := generateSeatReservation()
 		if err != nil {
 			panic(fmt.Sprint("SeatReservation作成エラー: ", err))

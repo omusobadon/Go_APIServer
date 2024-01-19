@@ -2,7 +2,6 @@ package ini
 
 import (
 	"Go_APIServer/db"
-	"Go_APIServer/funcs"
 	"context"
 	"fmt"
 	"math/rand"
@@ -41,6 +40,8 @@ func AutoInsert() error {
 		seat    []db.SeatModel
 		stock   []db.StockModel
 	)
+
+	fmt.Println("[Auto Insert]")
 
 	// 乱数シードの作成
 	rand.NewSource(time.Now().UnixNano())
@@ -274,7 +275,7 @@ func AutoInsert() error {
 		fmt.Printf("在庫テーブルにインサート(%d件)...", len(price)*stock_num)
 
 		// 現在時刻の取得
-		now := funcs.GetTime()
+		now := time.Now()
 
 		// 開始・終了時刻生成用の基準時間
 		time_generated := time.Date(

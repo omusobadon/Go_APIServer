@@ -18,9 +18,6 @@
 　各テーブル最初のカラムであるIDは、Prismaによって管理される。
 　そのIDはテーブルにおいて固有の値であり、新たな行が増えるとインクリメントされたIDが自動で生成される。
 
-### テーブル内容の見方
-- (カラム概要) : (jsonタグかつDBでのカラム名)
-
 ### Shop : 店舗情報
 - id        : 店舗ID（自動生成）
 - name      : 店舗名
@@ -29,80 +26,88 @@
 - address   : 住所
 
 ### ProductGroup : 商品グループ情報
-- id: 商品グループID（自動生成）
-- shop_id: 店舗ID
-- name: 商品グループ名
-- start_before: 
+- id                : 商品グループID（自動生成）
+- shop_id           : 店舗ID
+- name              : 商品グループ名
+- start_before      : 予約開始可能時間(h)（詳細はTime.pngを参照）
+- invalid_duration  : 予約無効期間(h)（詳細はTime.pngを参照）
+- unit_time         : 時間単位(m)
+- max_time          : 最大予約時間(h)
+- interval          : インターバル
+
+### Product : 商品情報
+- id        : 商品ID（自動生成）
+- group_id  : 商品グループID
+- name      : 商品名
+- max_people: 最大予約人数
+- qty       : デフォルトの数量
+- remark    : 備考
+
+### Price : 価格情報
+- id        : 価格ID（自動生成）
+- product_id: 商品ID
+- name      : 価格名
+- value     : 価格
+- tax       : 税率
+- remark    : 備考
+
+### Seat : 座席情報
+- id        : 座席ID（自動生成）
+- product_id: 商品ID
+- row       : 座席（行）
+- column    : 座席（列）
+- is_enable : 座席の有効・無効
+- remark    : 備考
+
+### Stock : 在庫情報
+- id        : 在庫ID（自動生成）
+- price_id  : 価格ID
+- name      : 在庫名
+- qty       : 数量
+- start_at  : 予約期間の開始時刻
+- end_at    : 予約期間の終了時刻
+- is_enable : 在庫の有効・無効
+
+### SeatReservation : 座席予約ステータス（自動生成）
+- id            : 座席予約ステータスID
+- stock_id      : 在庫ID
+- seat_id       : 座席ID
+- is_reserved   : ステータス
+
+### Customer : 顧客情報
+- id            : 顧客ID（自動生成）
+- name          : 顧客名
+- mail          : メールアドレス
+- phone         : 電話番号
+- password      : パスワード
+- address       : 住所
+- payment_info  : 決済情報
 
 ### Order : 注文情報
-- 注文ID : id
-- 注文詳細ID : detail_id
-- 顧客ID : customer_id
-- 在庫ID : stock_id
-- 座席ID : seat_id
-- 注文数 : num
-- 予約開始日時 : start
-- 予約終了日時 : end
-- 予約日時 : time
-- 予約状態 : state（確定、保留、キャンセルなど）
-- 備考 : note
+- id            : 注文ID（自動生成）
+- customer_id   : 顧客ID
+- start_at      : 予約期間の開始時刻
+- end_at        : 予約期間の終了時刻
+- is_accepted   : 承認ステータス
+- is_pending    : 保留ステータス
+- created_at    : 注文日時
+- remark        : 備考
 
-### 在庫テーブル : Stock
-- 在庫ID : id
-- 商品ID : product
-- 開始時刻 : start（時刻指定する場合。例：映画の開始時刻）
-- 終了時刻 : end
-- 在庫数 : num
-- 在庫状態 : state（予約を受け付けるかなどの状態）
+### PaymentState : 決済ステータス
+- id            : 決済ステータスID
+- order_id      : 注文ID
+- is_accepted   : 決済ステータス
+- message       : メッセージ
+- created_at    : 作成日時
 
-### 商品テーブル : Product
-- 商品ID : id
-- グループID : group_id
-- 商品名 : name
-- 個数 : num（デフォルトの個数。例：映画の座席数）
-- 価格 : value
-- 備考 : note
+### ReservationCancel : 予約キャンセル受付
+- id            : 予約キャンセル受付ID
+- order_id      : 注文ID
+- is_accepted   : キャンセルステータス
+- created_at    : 作成日時
 
-### 商品グループテーブル : ProductGroup
-- グループID : id
-- 商品カテゴリ : category
-- グループ名 : name
-- インターバル : interval（次の開始時刻までの間隔）
-
-### 座席テーブル : Seat
-- 座席ID : id
-- 商品ID : product_id
-- 座席名 : name
-- 座席状態 : state
-
-### 料金計算テーブル : Fee
-- 料金計算ID : id
-- 商品ID : product_id
-- 税率(%) : tax
-- 割引(%) : special
-
-### 決済処理テーブル : Payment
-- 決済処理ID : id
-- 注文ID : order_id
-- 決済状態 : state（支払い完了、未支払い、払い戻し済みなど）
-
-### 顧客情報テーブル : Customer
-- 顧客ID : id
-- 氏名 : name
-- メール : mail
-- 電話番号 : phone
-- 住所 : address
-- 決済情報 : payment（クレジットカードデータなど）
-
-### アクティブ時間テーブル : ActiveTime
-- ID : id
-- 注文ID : order_id
-- 予約開始日時 : start
-- 予約終了日時 : end
-
-### テーブル編集履歴テーブル : EditInfo
-- 編集ID : id
-- テーブル名 : table
-- 編集タイプ : type
-- 編集内容 : info
-- 編集時刻 : time
+### ReservationEnd : 予約終了受付
+- id            : 予約終了受付ID
+- order_id      : 注文ID
+- is_accepted   : 終了ステータス
+- created_at    : 作成日時

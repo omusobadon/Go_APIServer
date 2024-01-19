@@ -43,7 +43,7 @@ type PostOrderResponseFailure struct {
 	Request PostOrderRequest `json:"request"`
 }
 
-var options ini.Options = ini.OPTIONS
+var options ini.LoadedOptions = ini.Options
 var post_order_cnt int // PostOrderのカウント用
 
 func PostOrder(w http.ResponseWriter, r *http.Request) {
