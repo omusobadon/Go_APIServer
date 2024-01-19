@@ -42,6 +42,7 @@
 - max_people: 最大予約人数
 - qty       : デフォルトの数量
 - remark    : 備考
+- img_data  : 商品画像データ
 
 ### Price : 価格情報
 - id        : 価格ID（自動生成）

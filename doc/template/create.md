@@ -30,7 +30,8 @@
     "name": "Product Name",
     "max_people": 1,
     "qty": 10,
-    "remark": "remark"
+    "remark": "remark",
+    "img_data": "Encoded data",
 }
 ```
 

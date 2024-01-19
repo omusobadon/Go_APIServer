@@ -14,6 +14,7 @@ type CreateProductRequest struct {
 	Max    *int    `json:"max_people"`
 	Qty    *int    `json:"qty"`
 	Remark *string `json:"remark"`
+	Img    *string `json:"img_data"`
 }
 
 type CreateProductResponseSuccess struct {
@@ -121,6 +122,7 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 		db.Product.MaxPeople.SetIfPresent(req.Max),
 		db.Product.Qty.SetIfPresent(req.Qty),
 		db.Product.Remark.SetIfPresent(req.Remark),
+		db.Product.ImgData.SetIfPresent(req.Img),
 	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest

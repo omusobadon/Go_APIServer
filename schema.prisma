@@ -46,6 +46,7 @@ model Product {
   max_people Int? @default(0)
   qty Int?
   remark String?
+  img_data String?
 
   group ProductGroup @relation(fields: [group_id], references: [id])
   price Price[]
