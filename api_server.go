@@ -58,6 +58,10 @@ func APIServer() error {
 	// PUT
 	http.HandleFunc("/create_shop", CORSMiddleware(put.CreateShop))
 	http.HandleFunc("/create_group", CORSMiddleware(put.CreateGroup))
+	http.HandleFunc("/create_product", CORSMiddleware(put.CreateProduct))
+	http.HandleFunc("/create_price", CORSMiddleware(put.CreatePrice))
+	http.HandleFunc("/create_seat", CORSMiddleware(put.CreateSeat))
+	http.HandleFunc("/create_stock", CORSMiddleware(put.CreateStock))
 	http.HandleFunc("/create_customer", CORSMiddleware(put.CreateCustomer))
 
 	http.HandleFunc("/update_customer", CORSMiddleware(put.UpdateCustomer))

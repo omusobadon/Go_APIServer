@@ -1,14 +1,18 @@
-### 用意するテーブル一覧
-- 注文テーブル : Order
-- 在庫テーブル : Stock
-- 商品テーブル : Product
-- 商品グループテーブル : ProductGroup
-- 座席テーブル : Seat
-- 料金計算テーブル : Fee
-- 決済処理テーブル : Payment
-- 顧客情報テーブル : Customer
-- アクティブ時間テーブル : ActiveTime
-- テーブル編集履歴テーブル : EditInfo
+### テーブル一覧
+- Shop              : 店舗情報
+- ProductGroup      : 商品グループ情報
+- Product           : 商品情報
+- Price             : 価格情報
+- Seat              : 座席情報
+- Stock             : 在庫情報
+- SeatReservation   : 座席予約ステータス
+- Customer          : 顧客情報
+- Order             : 注文情報
+- OrderDetail       : 注文詳細情報
+- PaymentState      : 決済ステータス
+- ReservationCancel : 予約キャンセル受付
+- ReservationEnd    : 予約終了受付
+- EditInfo          : DB編集履歴
 
 ### 各テーブルについて
 　各テーブル最初のカラムであるIDは、Prismaによって管理される。
@@ -17,7 +21,20 @@
 ### テーブル内容の見方
 - (カラム概要) : (jsonタグかつDBでのカラム名)
 
-### 注文テーブル : Order
+### Shop : 店舗情報
+- id        : 店舗ID（自動生成）
+- name      : 店舗名
+- mail      : メールアドレス
+- phone     : 電話番号
+- address   : 住所
+
+### ProductGroup : 商品グループ情報
+- id: 商品グループID（自動生成）
+- shop_id: 店舗ID
+- name: 商品グループ名
+- start_before: 
+
+### Order : 注文情報
 - 注文ID : id
 - 注文詳細ID : detail_id
 - 顧客ID : customer_id
