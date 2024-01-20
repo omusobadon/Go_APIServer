@@ -71,6 +71,8 @@ func APIServer() error {
 	http.HandleFunc("/update_seat", CORSMiddleware(put.UpdateSeat))
 	http.HandleFunc("/update_stock", CORSMiddleware(put.UpdateStock))
 	http.HandleFunc("/update_customer", CORSMiddleware(put.UpdateCustomer))
+	http.HandleFunc("/update_order", CORSMiddleware(put.UpdateOrder))
+	http.HandleFunc("/update_order_detail", CORSMiddleware(put.UpdateOrderDetail))
 
 	// DELETE
 	http.HandleFunc("/delete_stock", CORSMiddleware(delete.DeleteStock))
