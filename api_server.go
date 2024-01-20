@@ -50,6 +50,7 @@ func APIServer() error {
 
 	// 管理用GET
 	http.HandleFunc("/get_customer", CORSMiddleware(get.GetCustomer))
+	http.HandleFunc("/get_order", CORSMiddleware(get.GetOrder))
 	http.HandleFunc("/get_manage", CORSMiddleware(get.GetManage))
 
 	// POST
@@ -79,10 +80,8 @@ func APIServer() error {
 	http.HandleFunc("/delete_customer", CORSMiddleware(delete.DeleteCustomer))
 	http.HandleFunc("/delete_detail", CORSMiddleware(delete.DeleteDetail))
 
-	http.HandleFunc("/test", post.Test)
-
 	// サーバの起動
-	fmt.Println("[Server start]")
+	fmt.Println("[Start APIServer]")
 	server.ListenAndServe()
 
 	return nil

@@ -22,7 +22,7 @@ func Scheduler() {
 	delay := time.Duration(ini.Options.Delay) * time.Second
 	allowable_error := time.Duration(ini.Options.Margin) * time.Second
 
-	fmt.Println("[Scheduler start]")
+	fmt.Println("[Start Scheduler]")
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()

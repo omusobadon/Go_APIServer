@@ -53,7 +53,7 @@ func loadOptions() error {
 	}
 
 	// optionの確認
-	fmt.Println("[Option]")
+	fmt.Println("[Loaded option]")
 	// fmt.Printf("Options: %+v\n", Options)
 
 	fmt.Print("ユーザ時刻指定: ")

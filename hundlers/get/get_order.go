@@ -1,4 +1,4 @@
-// 座席情報のGET
+// 商品グループ情報のGET
 package get
 
 import (
@@ -11,18 +11,18 @@ import (
 )
 
 // レスポンスに変換する構造体
-type GetSeatResponseBody struct {
-	Message string         `json:"message"`
-	Length  int            `json:"length"`
-	Seat    []db.SeatModel `json:"seat"`
+type GetOrderResponseBody struct {
+	Message string          `json:"message"`
+	Length  int             `json:"length"`
+	Order   []db.OrderModel `json:"order"`
 }
 
-var get_seat_cnt int // ShopGetの呼び出しカウント
+var get_order_cnt int // ShopGetの呼び出しカウント
 
-func GetSeat(w http.ResponseWriter, r *http.Request) {
-	get_seat_cnt++
+func GetOrder(w http.ResponseWriter, r *http.Request) {
+	get_order_cnt++
 	var (
-		seat    []db.SeatModel
+		order   []db.OrderModel
 		status  int
 		message string
 		err     error
@@ -31,10 +31,10 @@ func GetSeat(w http.ResponseWriter, r *http.Request) {
 	// リクエスト処理後のレスポンス作成
 	defer func() {
 		// レスポンスボディの作成
-		res := GetSeatResponseBody{
+		res := GetOrderResponseBody{
 			Message: message,
-			Length:  len(seat),
-			Seat:    seat,
+			Length:  len(order),
+			Order:   order,
 		}
 
 		// レスポンスをJSON形式で返す
@@ -46,16 +46,16 @@ func GetSeat(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprint("レスポンスの作成エラー : ", err)
 		}
 
-		fmt.Printf("[Get Seat.%d][%d] %s\n", get_seat_cnt, status, message)
+		fmt.Printf("[Get Order.%d][%d] %s\n", get_order_cnt, status, message)
 	}()
 
 	// リクエストパラメータの取得
-	product_str := r.FormValue("product_id")
+	customer_str := r.FormValue("customer_id")
 
 	// パラメータが空でない場合はIntに変換
-	var product_id int
-	if product_str != "" {
-		product_id, err = strconv.Atoi(product_str)
+	var customer_id int
+	if customer_str != "" {
+		customer_id, err = strconv.Atoi(customer_str)
 		if err != nil {
 			status = http.StatusBadRequest
 			message = fmt.Sprint("不正なパラメータ : ", err)
@@ -79,30 +79,28 @@ func GetSeat(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// productパラメータが"0"のときテーブルの内容を一括取得
+	// パラメータが"0"のときテーブルの内容を一括取得
 	// "0"以外のときはパラメータで指定した情報を取得
-	if product_id == 0 {
-		seat, err = client.Seat.FindMany().With(
-			db.Seat.ReservedSeat.Fetch(),
+	if customer_id == 0 {
+		order, err = client.Order.FindMany().With(
+			db.Order.OrderDetail.Fetch(),
 		).Exec(ctx)
 
 	} else {
-		seat, err = client.Seat.FindMany(
-			db.Seat.ProductID.Equals(product_id),
-		).With(
-			db.Seat.ReservedSeat.Fetch(),
+		order, err = client.Order.FindMany(
+			db.Order.CustomerID.Equals(customer_id),
 		).Exec(ctx)
 	}
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("座席テーブル取得エラー : ", err)
+		message = fmt.Sprint("商品グループテーブル取得エラー : ", err)
 		return
 	}
 
 	// 取得した情報がないとき
-	if len(seat) == 0 {
+	if len(order) == 0 {
 		status = http.StatusBadRequest
-		message = "座席情報がありません"
+		message = "商品グループ情報がありません"
 		return
 	}
 

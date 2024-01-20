@@ -7,12 +7,10 @@ import (
 )
 
 // 商品・在庫テーブルが空の場合、自動生成するかどうか（テスト用）
-const auto_insert bool = false
+const auto_insert bool = true
 
 // SeatReservationの自動生成
 func generateSeatReservation() error {
-
-	fmt.Println("[SeatReservation generate]")
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -47,7 +45,7 @@ func generateSeatReservation() error {
 		for _, se := range seat {
 
 			// SeatReservationにデータがない場合は生成
-			_, err := client.SeatReservation.UpsertOne(
+			_, err = client.SeatReservation.UpsertOne(
 				db.SeatReservation.StockIDSeatID(
 					db.SeatReservation.StockID.Equals(st.ID),
 					db.SeatReservation.SeatID.Equals(se.ID),
@@ -67,11 +65,13 @@ func generateSeatReservation() error {
 		}
 	}
 
+	fmt.Println("[Generated SeatReservation]")
+
 	return nil
 }
 
 func init() {
-	fmt.Println("[Init start]")
+	fmt.Println("[Start Init]")
 
 	// オプションの読み込み
 	if err := loadOptions(); err != nil {

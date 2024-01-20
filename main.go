@@ -9,7 +9,7 @@ import (
 func main() {
 
 	// TimeAPI動作チェック
-	fmt.Println("[TimeAPI test]", funcs.GetTime())
+	fmt.Println("[Test TimeAPI]", funcs.GetTime())
 
 	// スケジューラの起動
 	go scheduler.Scheduler()

@@ -36,7 +36,7 @@
     "max_people": 1,
     "qty": 10,
     "remark": "remark",
-    "img_data": "Encoded data",
+    "img_data": "Encoded data"
 }
 ```
 
@@ -81,12 +81,12 @@
 ```json
 {
     "id": 1,
-    "name": "test",
-    "mail": "test",
-    "phone": "test",
-    "password": "test",
-    "address": "test",
-    "payment_info": "test"
+    "name": "Customer Name",
+    "mail": "customer@domain.jp",
+    "phone": "XXXX-XX-XXXX",
+    "password": "PASSWORD",
+    "address": "Tokyo",
+    "payment_info": "Pay"
 }
 ```
 
@@ -111,6 +111,6 @@
     "stock_id": 1,
     "seat_id": 1,
     "number_people": 1,
-    "qty": 1,
+    "qty": 1
 }
 ```

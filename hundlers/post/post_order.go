@@ -14,19 +14,18 @@ import (
 
 // リクエストを変換する構造体
 type PostOrderRequest struct {
-	Customer int                      `json:"customer_id"`
-	Start    time.Time                `json:"start_at"`
-	End      time.Time                `json:"end_at"`
-	People   int                      `json:"number_people"`
-	Remark   string                   `json:"remark"`
-	Detail   []PostOrderRequestDetail `json:"detail"`
+	Customer *int                      `json:"customer_id"`
+	Start    *time.Time                `json:"start_at"`
+	End      *time.Time                `json:"end_at"`
+	Remark   *string                   `json:"remark"`
+	Detail   *[]PostOrderRequestDetail `json:"detail"`
 }
 
 type PostOrderRequestDetail struct {
-	Stock  int `json:"stock_id"`
-	Seat   int `json:"seat_id"`
-	People int `json:"number_people"`
-	Qty    int `json:"qty"`
+	Stock  *int `json:"stock_id"`
+	Seat   *int `json:"seat_id"`
+	People *int `json:"number_people"`
+	Qty    *int `json:"qty"`
 }
 
 // レスポンスに変換する構造体（処理成功）
@@ -106,6 +105,47 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 値があるかチェック
+	if req.Customer == nil {
+		status = http.StatusBadRequest
+		message = "customer_id is null"
+		return
+	}
+	if options.Time_free_enable {
+		if req.Start == nil {
+			status = http.StatusBadRequest
+			message = "start_at is null"
+			return
+		}
+		if req.End == nil {
+			status = http.StatusBadRequest
+			message = "end_at is null"
+			return
+		}
+	}
+	if req.Detail == nil {
+		status = http.StatusBadRequest
+		message = "detail is null"
+		return
+	}
+
+	for _, d := range *req.Detail {
+		if d.Stock == nil {
+			status = http.StatusBadRequest
+			message = "stock_id is null"
+			return
+		}
+
+		if options.Seat_enable {
+			if d.Seat == nil {
+				status = http.StatusBadRequest
+				message = "seat is null"
+				return
+			}
+
+		}
+	}
+
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
 	if err := client.Prisma.Connect(); err != nil {
@@ -124,7 +164,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 	// 顧客情報が存在するか確認
 	_, err := client.Customer.FindUnique(
-		db.Customer.ID.Equals(req.Customer),
+		db.Customer.ID.Equals(*req.Customer),
 	).Exec(ctx)
 	if errors.Is(err, db.ErrNotFound) {
 		status = http.StatusBadRequest
@@ -152,7 +192,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 予約開始時刻が終了時刻より後の場合はエラー
-		if req.Start.After(req.End) {
+		if req.Start.After(*req.End) {
 			status = http.StatusBadRequest
 			message = "予約開始時刻が終了時刻よりも後です"
 			return
@@ -179,11 +219,11 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 注文処理
-	for _, v := range req.Detail {
+	for _, v := range *req.Detail {
 
 		// 注文情報の在庫IDと一致する情報を取得
 		stock, err := client.Stock.FindUnique(
-			db.Stock.ID.Equals(v.Stock)).With(
+			db.Stock.ID.Equals(*v.Stock)).With(
 			db.Stock.Price.Fetch().With(
 				db.Price.Product.Fetch().With(
 					db.Product.Group.Fetch(),
@@ -204,7 +244,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		// 在庫状態が有効かチェック
 		if !stock.IsEnable {
 			status = http.StatusBadRequest
-			message = fmt.Sprint("無効な在庫 : ", err)
+			message = "在庫状態が無効"
 			return
 		}
 
@@ -237,7 +277,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// 終了時間 - 開始時間
-			time_sub := req.End.Sub(req.Start)
+			time_sub := req.End.Sub(*req.Start)
 
 			// unit_time(時間単位)通りかチェック
 			unit_time, ok := stock.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Group.UnitTime()
@@ -296,7 +336,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		// max_people = 0 の場合は最大人数無指定としてチェックしない
 		max_people, _ := stock.RelationsStock.Price.RelationsPrice.Product.MaxPeople()
 		if max_people != 0 {
-			if req.People > max_people {
+			if *v.People > max_people {
 				status = http.StatusBadRequest
 				message = "人数超過です"
 				return
@@ -309,7 +349,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 			// 座席情報の取得
 			seat, err := client.Seat.FindUnique(
-				db.Seat.ID.Equals(v.Seat),
+				db.Seat.ID.Equals(*v.Seat),
 			).Exec(ctx)
 			if err != nil {
 				status = http.StatusBadRequest
@@ -327,8 +367,8 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			// SeatReservationを取得
 			reserv, err := client.SeatReservation.FindUnique(
 				db.SeatReservation.StockIDSeatID(
-					db.SeatReservation.StockID.Equals(v.Stock),
-					db.SeatReservation.SeatID.Equals(v.Seat),
+					db.SeatReservation.StockID.Equals(*v.Stock),
+					db.SeatReservation.SeatID.Equals(*v.Seat),
 				),
 			).Exec(ctx)
 			if err != nil {
@@ -346,8 +386,8 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 			} else {
 				_, err := client.SeatReservation.FindUnique(
 					db.SeatReservation.StockIDSeatID(
-						db.SeatReservation.StockID.Equals(v.Stock),
-						db.SeatReservation.SeatID.Equals(v.Seat),
+						db.SeatReservation.StockID.Equals(*v.Stock),
+						db.SeatReservation.SeatID.Equals(*v.Seat),
 					),
 				).Update(
 					db.SeatReservation.IsReserved.Set(true),
@@ -362,7 +402,7 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// // 在庫が注文数よりも少ない場合はエラー
 			var qty int
-			if qty, _ = stock.Qty(); qty < v.Qty {
+			if qty, _ = stock.Qty(); qty < *v.Qty {
 				status = http.StatusBadRequest
 				message = "在庫不足"
 				return
@@ -370,9 +410,9 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 			// 在庫テーブルに注文情報を反映
 			_, err = client.Stock.FindUnique(
-				db.Stock.ID.Equals(v.Stock),
+				db.Stock.ID.Equals(*v.Stock),
 			).Update(
-				db.Stock.Qty.Set(qty - v.Qty),
+				db.Stock.Qty.Set(qty - *v.Qty),
 			).Exec(ctx)
 
 			if err != nil {
@@ -392,11 +432,11 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 		db.Order.IsAccepted.Set(true),
 		db.Order.IsPending.Set(false),
 		db.Order.Customer.Link(
-			db.Customer.ID.Equals(req.Customer),
+			db.Customer.ID.Equals(*req.Customer),
 		),
-		db.Order.StartAt.Set(req.Start),
-		db.Order.EndAt.Set(req.End),
-		db.Order.Remark.Set(req.Remark),
+		db.Order.StartAt.Set(*req.Start),
+		db.Order.EndAt.Set(*req.End),
+		db.Order.Remark.Set(*req.Remark),
 	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
@@ -405,15 +445,19 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// OrderDetailテーブルに注文情報をインサート
-	for _, v := range req.Detail {
+	for _, v := range *req.Detail {
 		d, err := client.OrderDetail.CreateOne(
 			db.OrderDetail.Order.Link(
 				db.Order.ID.Equals(order.ID),
 			),
 			db.OrderDetail.Stock.Link(
-				db.Stock.ID.Equals(v.Stock),
+				db.Stock.ID.Equals(*v.Stock),
 			),
-			db.OrderDetail.Qty.Set(v.Qty),
+			db.OrderDetail.Seat.Link(
+				db.Seat.ID.EqualsIfPresent(v.Seat),
+			),
+			db.OrderDetail.NumberPeople.SetIfPresent(v.People),
+			db.OrderDetail.Qty.SetIfPresent(v.Qty),
 		).Exec(ctx)
 		if err != nil {
 			status = http.StatusBadRequest

@@ -153,7 +153,7 @@ model OrderDetail {
   order_id Int
   stock_id Int
   seat_id Int?
-  number_people Int? @default(0)
+  number_people Int?
   qty Int?
 
   order Order @relation(fields: [order_id], references: [id])
