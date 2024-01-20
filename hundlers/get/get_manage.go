@@ -84,7 +84,7 @@ func GetManage(w http.ResponseWriter, r *http.Request) {
 
 	// GET
 	groups, err = client.ProductGroup.FindMany(
-		db.ProductGroup.ID.Equals(shop_id),
+		db.ProductGroup.ShopID.Equals(shop_id),
 	).With(
 		db.ProductGroup.Product.Fetch().With(
 			db.Product.Price.Fetch().With(

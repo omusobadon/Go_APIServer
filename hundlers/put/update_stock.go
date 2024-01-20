@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-type CreateStockRequest struct {
+type UpdateStockRequest struct {
+	ID     *int       `json:"id"`
 	Price  *int       `json:"price_id"`
 	Name   *string    `json:"name"`
 	Qty    *int       `json:"qty"`
@@ -18,25 +19,23 @@ type CreateStockRequest struct {
 	Enable *bool      `json:"is_enable"`
 }
 
-type CreateStockResponseSuccess struct {
-	Message    string                    `json:"message"`
-	Request    CreateStockRequest        `json:"request"`
-	Registered db.StockModel             `json:"registered"`
-	Generated  []db.SeatReservationModel `json:"seat_reservation"`
+type UpdateStockResponseSuccess struct {
+	Message    string             `json:"message"`
+	Request    UpdateStockRequest `json:"request"`
+	Registered db.StockModel      `json:"registered"`
 }
 
-type CreateStockResponseFailure struct {
+type UpdateStockResponseFailure struct {
 	Message string             `json:"message"`
-	Request CreateStockRequest `json:"request"`
+	Request UpdateStockRequest `json:"request"`
 }
 
-func CreateStock(w http.ResponseWriter, r *http.Request) {
+func UpdateStock(w http.ResponseWriter, r *http.Request) {
 	var (
-		status    int    = http.StatusNotImplemented
-		message   string = "メッセージがありません"
-		req       CreateStockRequest
-		stock     db.StockModel
-		generated []db.SeatReservationModel
+		status     int    = http.StatusNotImplemented
+		message    string = "メッセージがありません"
+		req        UpdateStockRequest
+		registered db.StockModel
 	)
 
 	// 処理終了後のレスポンス処理
@@ -48,13 +47,12 @@ func CreateStock(w http.ResponseWriter, r *http.Request) {
 
 		// 注文成功時
 		if status == http.StatusOK {
-			res := new(CreateStockResponseSuccess)
+			res := new(UpdateStockResponseSuccess)
 
 			// レスポンスボディの作成
 			res.Message = message
 			res.Request = req
-			res.Registered = stock
-			res.Generated = generated
+			res.Registered = registered
 
 			// レスポンス構造体をJSONに変換して送信
 			if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -64,7 +62,7 @@ func CreateStock(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
-			res := new(CreateStockResponseFailure)
+			res := new(UpdateStockResponseFailure)
 
 			// レスポンスボディの作成
 			res.Message = message
@@ -78,7 +76,7 @@ func CreateStock(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Printf("[Create Stock][%d] %s\n", status, message)
+		fmt.Printf("[Update Stock][%d] %s\n", status, message)
 
 	}()
 
@@ -90,19 +88,9 @@ func CreateStock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// リクエストの中身が存在するか確認
-	if req.Price == nil {
+	if req.ID == nil {
 		status = http.StatusBadRequest
-		message = "price_id is null"
-		return
-	}
-	if req.Name == nil {
-		status = http.StatusBadRequest
-		message = "name is null"
-		return
-	}
-	if req.Enable == nil {
-		status = http.StatusBadRequest
-		message = "is_enable is null"
+		message = "id is null"
 		return
 	}
 
@@ -122,12 +110,12 @@ func CreateStock(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// 在庫情報の挿入
-	created, err := client.Stock.CreateOne(
+	// 顧客情報の挿入
+	created, err := client.Stock.FindUnique(
+		db.Stock.ID.EqualsIfPresent(req.ID),
+	).Update(
+		db.Stock.PriceID.SetIfPresent(req.Price),
 		db.Stock.Name.SetIfPresent(req.Name),
-		db.Stock.Price.Link(
-			db.Price.ID.EqualsIfPresent(req.Price),
-		),
 		db.Stock.Qty.SetIfPresent(req.Qty),
 		db.Stock.StartAt.SetIfPresent(req.Start),
 		db.Stock.EndAt.SetIfPresent(req.End),
@@ -135,48 +123,11 @@ func CreateStock(w http.ResponseWriter, r *http.Request) {
 	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("Priceテーブル挿入エラー : ", err)
+		message = fmt.Sprint("Stockテーブル挿入エラー : ", err)
 		return
 	}
 
-	stock = *created
-
-	// 作成したStockと紐づくSeatを取得
-	price, _ := client.Price.FindUnique(
-		db.Price.ID.Equals(stock.PriceID),
-	).With(
-		db.Price.Product.Fetch().With(
-			db.Product.Seat.Fetch(),
-		),
-	).Exec(ctx)
-
-	seat := price.RelationsPrice.Product.RelationsProduct.Seat
-
-	for _, se := range seat {
-
-		// SeatReservationにデータがない場合は生成
-		g, err := client.SeatReservation.UpsertOne(
-			db.SeatReservation.StockIDSeatID(
-				db.SeatReservation.StockID.Equals(stock.ID),
-				db.SeatReservation.SeatID.Equals(se.ID),
-			),
-		).Create(
-			db.SeatReservation.Stock.Link(
-				db.Stock.ID.Equals(stock.ID),
-			),
-			db.SeatReservation.Seat.Link(
-				db.Seat.ID.Equals(se.ID),
-			),
-			db.SeatReservation.IsReserved.Set(false),
-		).Update().Exec(ctx)
-		if err != nil {
-			status = http.StatusBadRequest
-			message = fmt.Sprint("seatreservationアップサートエラー : ", err)
-			return
-		}
-
-		generated = append(generated, *g)
-	}
+	registered = *created
 
 	status = http.StatusOK
 	message = "正常終了"

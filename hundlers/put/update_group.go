@@ -8,33 +8,34 @@ import (
 	"net/http"
 )
 
-type UpdateCustomerRequest struct {
+type UpdateGroupRequest struct {
 	ID       *int    `json:"id"`
+	Shop     *int    `json:"shop_id"`
 	Name     *string `json:"name"`
-	Mail     *string `json:"mail"`
-	Phone    *string `json:"phone"`
-	Password *string `json:"password"`
-	Address  *string `json:"address"`
-	Payment  *string `json:"payment_info"`
+	Start    *int    `json:"start_before"`
+	Invalid  *int    `json:"invalid_duration"`
+	Unit     *int    `json:"unit_time"`
+	Max      *int    `json:"max_time"`
+	Interval *int    `json:"interval"`
 }
 
-type UpdateCustomerResponseSuccess struct {
-	Message    string                `json:"message"`
-	Request    UpdateCustomerRequest `json:"request"`
-	Registered db.CustomerModel      `json:"registered"`
+type UpdateGroupResponseSuccess struct {
+	Message    string               `json:"message"`
+	Request    UpdateGroupRequest   `json:"request"`
+	Registered db.ProductGroupModel `json:"registered"`
 }
 
-type UpdateCustomerResponseFailure struct {
-	Message string                `json:"message"`
-	Request UpdateCustomerRequest `json:"request"`
+type UpdateGroupResponseFailure struct {
+	Message string             `json:"message"`
+	Request UpdateGroupRequest `json:"request"`
 }
 
-func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
+func UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	var (
 		status     int    = http.StatusNotImplemented
 		message    string = "メッセージがありません"
-		req        UpdateCustomerRequest
-		registered db.CustomerModel
+		req        UpdateGroupRequest
+		registered db.ProductGroupModel
 	)
 
 	// 処理終了後のレスポンス処理
@@ -46,7 +47,7 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 
 		// 注文成功時
 		if status == http.StatusOK {
-			res := new(UpdateCustomerResponseSuccess)
+			res := new(UpdateGroupResponseSuccess)
 
 			// レスポンスボディの作成
 			res.Message = message
@@ -61,7 +62,7 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
-			res := new(UpdateCustomerResponseFailure)
+			res := new(UpdateGroupResponseFailure)
 
 			// レスポンスボディの作成
 			res.Message = message
@@ -75,7 +76,7 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Printf("[Update Customer][%d] %s\n", status, message)
+		fmt.Printf("[Update Group][%d] %s\n", status, message)
 
 	}()
 
@@ -110,19 +111,20 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	// 顧客情報の挿入
-	created, err := client.Customer.FindUnique(
-		db.Customer.ID.EqualsIfPresent(req.ID),
+	created, err := client.ProductGroup.FindUnique(
+		db.ProductGroup.ID.EqualsIfPresent(req.ID),
 	).Update(
-		db.Customer.Name.SetIfPresent(req.Name),
-		db.Customer.Mail.SetIfPresent(req.Mail),
-		db.Customer.Phone.SetIfPresent(req.Phone),
-		db.Customer.Password.SetIfPresent(req.Password),
-		db.Customer.Address.SetIfPresent(req.Address),
-		db.Customer.PaymentInfo.SetIfPresent(req.Payment),
+		db.ProductGroup.ShopID.SetIfPresent(req.Shop),
+		db.ProductGroup.Name.SetIfPresent(req.Name),
+		db.ProductGroup.StartBefore.SetIfPresent(req.Start),
+		db.ProductGroup.InvalidDuration.SetIfPresent(req.Invalid),
+		db.ProductGroup.UnitTime.SetIfPresent(req.Unit),
+		db.ProductGroup.MaxTime.SetIfPresent(req.Max),
+		db.ProductGroup.Interval.SetIfPresent(req.Interval),
 	).Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("Customerテーブル挿入エラー : ", err)
+		message = fmt.Sprint("ProductGroupテーブル挿入エラー : ", err)
 		return
 	}
 

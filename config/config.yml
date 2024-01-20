@@ -3,7 +3,7 @@
 time_free_enable: true
 
 # 座席指定を有効にするか
-seat_enable: false
+seat_enable: true
 
 # 予約注文を保留するか
 hold_enable: false

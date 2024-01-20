@@ -8,7 +8,8 @@ import (
 	"net/http"
 )
 
-type CreateSeatRequest struct {
+type UpdateSeatRequest struct {
+	ID      *int    `json:"id"`
 	Product *int    `json:"product_id"`
 	Row     *string `json:"row"`
 	Column  *string `json:"column"`
@@ -16,25 +17,23 @@ type CreateSeatRequest struct {
 	Remark  *string `json:"remark"`
 }
 
-type CreateSeatResponseSuccess struct {
-	Message    string                    `json:"message"`
-	Request    CreateSeatRequest         `json:"request"`
-	Registered db.SeatModel              `json:"registered"`
-	Generated  []db.SeatReservationModel `json:"seat_reservation"`
+type UpdateSeatResponseSuccess struct {
+	Message    string            `json:"message"`
+	Request    UpdateSeatRequest `json:"request"`
+	Registered db.SeatModel      `json:"registered"`
 }
 
-type CreateSeatResponseFailure struct {
+type UpdateSeatResponseFailure struct {
 	Message string            `json:"message"`
-	Request CreateSeatRequest `json:"request"`
+	Request UpdateSeatRequest `json:"request"`
 }
 
-func CreateSeat(w http.ResponseWriter, r *http.Request) {
+func UpdateSeat(w http.ResponseWriter, r *http.Request) {
 	var (
-		status    int    = http.StatusNotImplemented
-		message   string = "メッセージがありません"
-		req       CreateSeatRequest
-		seat      db.SeatModel
-		generated []db.SeatReservationModel
+		status     int    = http.StatusNotImplemented
+		message    string = "メッセージがありません"
+		req        UpdateSeatRequest
+		registered db.SeatModel
 	)
 
 	// 処理終了後のレスポンス処理
@@ -46,13 +45,12 @@ func CreateSeat(w http.ResponseWriter, r *http.Request) {
 
 		// 注文成功時
 		if status == http.StatusOK {
-			res := new(CreateSeatResponseSuccess)
+			res := new(UpdateSeatResponseSuccess)
 
 			// レスポンスボディの作成
 			res.Message = message
 			res.Request = req
-			res.Registered = seat
-			res.Generated = generated
+			res.Registered = registered
 
 			// レスポンス構造体をJSONに変換して送信
 			if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -62,7 +60,7 @@ func CreateSeat(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
-			res := new(CreateSeatResponseFailure)
+			res := new(UpdateSeatResponseFailure)
 
 			// レスポンスボディの作成
 			res.Message = message
@@ -76,7 +74,7 @@ func CreateSeat(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Printf("[Create Seat][%d] %s\n", status, message)
+		fmt.Printf("[Update Seat][%d] %s\n", status, message)
 
 	}()
 
@@ -88,24 +86,9 @@ func CreateSeat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// リクエストの中身が存在するか確認
-	if req.Product == nil {
+	if req.ID == nil {
 		status = http.StatusBadRequest
-		message = "product_id is null"
-		return
-	}
-	if req.Row == nil {
-		status = http.StatusBadRequest
-		message = "row is null"
-		return
-	}
-	if req.Column == nil {
-		status = http.StatusBadRequest
-		message = "column is null"
-		return
-	}
-	if req.Enable == nil {
-		status = http.StatusBadRequest
-		message = "is_enable is null"
+		message = "id is null"
 		return
 	}
 
@@ -125,13 +108,13 @@ func CreateSeat(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// 座席情報の挿入
-	created, err := client.Seat.CreateOne(
+	// 顧客情報の挿入
+	created, err := client.Seat.FindUnique(
+		db.Seat.ID.EqualsIfPresent(req.ID),
+	).Update(
+		db.Seat.ProductID.SetIfPresent(req.Product),
 		db.Seat.Row.SetIfPresent(req.Row),
 		db.Seat.Column.SetIfPresent(req.Column),
-		db.Seat.Product.Link(
-			db.Product.ID.EqualsIfPresent(req.Product),
-		),
 		db.Seat.IsEnable.SetIfPresent(req.Enable),
 		db.Seat.Remark.SetIfPresent(req.Remark),
 	).Exec(ctx)
@@ -141,44 +124,7 @@ func CreateSeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	seat = *created
-
-	// 作成したSeatと紐づくStockを取得
-	product, _ := client.Product.FindUnique(
-		db.Product.ID.Equals(seat.ProductID),
-	).With(
-		db.Product.Price.Fetch().With(
-			db.Price.Stock.Fetch(),
-		),
-	).Exec(ctx)
-
-	for _, p := range product.RelationsProduct.Price {
-		for _, s := range p.RelationsPrice.Stock {
-
-			// SeatReservationにデータがない場合は生成
-			g, err := client.SeatReservation.UpsertOne(
-				db.SeatReservation.StockIDSeatID(
-					db.SeatReservation.StockID.Equals(s.ID),
-					db.SeatReservation.SeatID.Equals(seat.ID),
-				),
-			).Create(
-				db.SeatReservation.Stock.Link(
-					db.Stock.ID.Equals(s.ID),
-				),
-				db.SeatReservation.Seat.Link(
-					db.Seat.ID.Equals(seat.ID),
-				),
-				db.SeatReservation.IsReserved.Set(false),
-			).Update().Exec(ctx)
-			if err != nil {
-				status = http.StatusBadRequest
-				message = fmt.Sprint("seatreservationアップサートエラー : ", err)
-				return
-			}
-
-			generated = append(generated, *g)
-		}
-	}
+	registered = *created
 
 	status = http.StatusOK
 	message = "正常終了"

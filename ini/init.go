@@ -3,87 +3,16 @@ package ini
 import (
 	"Go_APIServer/db"
 	"context"
-	"errors"
 	"fmt"
-	"os"
-	"time"
-
-	"gopkg.in/yaml.v2"
 )
 
-var Options LoadedOptions
-var Timezone *time.Location
-
-// config.ymlデコード用構造体
-type LoadedOptions struct {
-	Time_free_enable  bool   `yaml:"time_free_enable"`
-	Seat_enable       bool   `yaml:"seat_enable"`
-	Hold_enable       bool   `yaml:"hold_enable"`
-	Payment_enable    bool   `yaml:"payment_enable"`
-	User_end_enable   bool   `yaml:"user_end_enable"`
-	User_notification bool   `yaml:"user_notification"`
-	Delay             int    `yaml:"delay"`
-	Margin            int    `yaml:"margin"`
-	Local_time_enable bool   `yaml:"local_time_enable"`
-	Timezone          string `yaml:"timezone"`
-	Time_difference   int    `yaml:"time_difference"`
-}
-
 // 商品・在庫テーブルが空の場合、自動生成するかどうか（テスト用）
-const auto_insert bool = true
-
-// オプションの読み込み
-func LoadOptions() error {
-
-	// config.ymlの読み込み
-	content, err := os.ReadFile("config/config.yml")
-	if err != nil {
-		return err
-	}
-
-	// ymlのデコード
-	err = yaml.Unmarshal(content, &Options)
-	if err != nil {
-		return err
-	}
-
-	// ローカルタイムの設定
-	if Options.Local_time_enable {
-		Timezone = time.Local
-
-	} else {
-		Timezone, err = time.LoadLocation(Options.Timezone)
-		if err != nil {
-			Timezone = time.FixedZone(Options.Timezone, Options.Time_difference*60*60)
-		}
-	}
-
-	// optionの確認
-	fmt.Println("[Option]")
-	// fmt.Printf("Options: %+v\n", Options)
-
-	fmt.Print("ユーザ時刻指定: ")
-	if Options.Time_free_enable {
-		fmt.Println("有効")
-	} else {
-		fmt.Println("無効")
-	}
-
-	fmt.Print("座席指定: ")
-	if Options.Seat_enable {
-		fmt.Println("有効")
-	} else {
-		fmt.Println("無効")
-	}
-
-	fmt.Printf("スケジューラチェック間隔: %ds, マージン: %ds\n", Options.Delay, Options.Margin)
-	fmt.Println("タイムゾーン:", Timezone)
-
-	return nil
-}
+const auto_insert bool = false
 
 // SeatReservationの自動生成
 func generateSeatReservation() error {
+
+	fmt.Println("[SeatReservation generate]")
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -100,37 +29,30 @@ func generateSeatReservation() error {
 	ctx := context.Background()
 
 	// Stockの取得
-	stock, err := client.Stock.FindMany().Exec(ctx)
+	stock, err := client.Stock.FindMany().With(
+		db.Stock.Price.Fetch().With(
+			db.Price.Product.Fetch().With(
+				db.Product.Seat.Fetch(),
+			),
+		),
+	).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("stock取得エラー : %w", err)
 	}
 
 	for _, st := range stock {
 
-		// Seatの取得
-		seat, err := client.Seat.FindMany().Exec(ctx)
-		if err != nil {
-			return fmt.Errorf("seat取得エラー : %w", err)
-		}
+		seat := st.RelationsStock.Price.RelationsPrice.Product.RelationsProduct.Seat
 
 		for _, se := range seat {
-			// SeatReservationにデータがある場合はスキップ
-			_, err := client.SeatReservation.FindFirst(
-				db.SeatReservation.StockID.Equals(st.ID),
-				db.SeatReservation.SeatID.Equals(se.ID),
-			).Exec(ctx)
 
-			if errors.Is(err, db.ErrNotFound) {
-
-			} else if err != nil {
-				return fmt.Errorf("seat取得エラー : %w", err)
-
-			} else {
-				continue
-			}
-
-			// SeatReservationにインサート
-			_, err = client.SeatReservation.CreateOne(
+			// SeatReservationにデータがない場合は生成
+			_, err := client.SeatReservation.UpsertOne(
+				db.SeatReservation.StockIDSeatID(
+					db.SeatReservation.StockID.Equals(st.ID),
+					db.SeatReservation.SeatID.Equals(se.ID),
+				),
+			).Create(
 				db.SeatReservation.Stock.Link(
 					db.Stock.ID.Equals(st.ID),
 				),
@@ -138,9 +60,9 @@ func generateSeatReservation() error {
 					db.Seat.ID.Equals(se.ID),
 				),
 				db.SeatReservation.IsReserved.Set(false),
-			).Exec(ctx)
+			).Update().Exec(ctx)
 			if err != nil {
-				return fmt.Errorf("SeatReservationインサートエラー : %w", err)
+				return fmt.Errorf("seatreservationアップサートエラー : %w", err)
 			}
 		}
 	}
@@ -152,7 +74,7 @@ func init() {
 	fmt.Println("[Init start]")
 
 	// オプションの読み込み
-	if err := LoadOptions(); err != nil {
+	if err := loadOptions(); err != nil {
 		panic(fmt.Sprint("オプション読み込みエラー: ", err))
 	}
 
