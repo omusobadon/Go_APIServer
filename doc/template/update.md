@@ -89,3 +89,28 @@
     "payment_info": "test"
 }
 ```
+
+## update_order
+```json
+{
+    "id": 1,
+    "customer_id": 1,
+    "start_at": "2024-01-20T16:00:00+09:00",
+    "end_at": "2024-01-20T18:00:00+09:00",
+    "is_accepted": false,
+    "is_pending": false,
+    "remark": "remark"
+}
+```
+
+## update_order_detail
+```json
+{
+    "id": 1,
+    "order_id": 1,
+    "stock_id": 1,
+    "seat_id": 1,
+    "number_people": 1,
+    "qty": 1,
+}
+```
