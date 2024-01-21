@@ -6,24 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
-type DeleteStockRequest struct {
-	ID *int `json:"id"`
-}
-
-type DeleteStockResponse struct {
-	Message    string             `json:"message"`
-	Request    DeleteStockRequest `json:"request"`
-	Registered db.StockModel      `json:"registered"`
+type DeleteStockResponseSuccess struct {
+	Message string        `json:"message"`
+	Deleted db.StockModel `json:"deleted"`
 }
 
 func DeleteStock(w http.ResponseWriter, r *http.Request) {
 	var (
 		status  int    = http.StatusNotImplemented
 		message string = "メッセージがありません"
-		req     DeleteStockRequest
-		stock   db.StockModel
+		err     error
+		deleted db.StockModel
 	)
 
 	// 処理終了後のレスポンス処理
@@ -33,14 +29,13 @@ func DeleteStock(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
 
-		// 注文成功時
+		// 処理成功時
 		if status == http.StatusOK {
-			res := new(DeleteStockResponse)
+			res := new(DeleteStockResponseSuccess)
 
 			// レスポンスボディの作成
 			res.Message = message
-			res.Request = req
-			res.Registered = stock
+			res.Deleted = deleted
 
 			// レスポンス構造体をJSONに変換して送信
 			if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -50,11 +45,10 @@ func DeleteStock(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
-			res := new(DeleteStockResponse)
+			res := new(DeleteResponseFailure)
 
 			// レスポンスボディの作成
 			res.Message = message
-			res.Request = req
 
 			// レスポンス構造体をJSONに変換して送信
 			if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -68,17 +62,12 @@ func DeleteStock(w http.ResponseWriter, r *http.Request) {
 
 	}()
 
-	// 注文情報をデコード
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// リクエストパラメータの取得
+	id_str := r.FormValue("id")
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("POSTデコードエラー : ", err)
-		return
-	}
-
-	// リクエストの中身が存在するか確認
-	if req.ID == nil {
-		status = http.StatusBadRequest
-		message = "id is null"
+		message = "不正なパラメータ"
 		return
 	}
 
@@ -98,17 +87,17 @@ func DeleteStock(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// 顧客情報の削除
-	deleted, err := client.Stock.FindUnique(
-		db.Stock.ID.EqualsIfPresent(req.ID),
-	).Delete().Exec(ctx)
+	// Delete
+	d, err := client.Stock.FindUnique(
+		db.Stock.ID.Equals(id),
+	).With().Delete().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("Stockテーブル削除エラー : ", err)
+		message = fmt.Sprint("Seat削除エラー : ", err)
 		return
 	}
 
-	stock = *deleted
+	deleted = *d
 
 	status = http.StatusOK
 	message = "正常終了"

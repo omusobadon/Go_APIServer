@@ -76,9 +76,15 @@ func APIServer() error {
 	http.HandleFunc("/update_order_detail", CORSMiddleware(put.UpdateOrderDetail))
 
 	// DELETE
+	http.HandleFunc("/delete_shop", CORSMiddleware(delete.DeleteShop))
+	http.HandleFunc("/delete_group", CORSMiddleware(delete.DeleteGroup))
+	http.HandleFunc("/delete_product", CORSMiddleware(delete.DeleteProduct))
+	http.HandleFunc("/delete_price", CORSMiddleware(delete.DeletePrice))
+	http.HandleFunc("/delete_seat", CORSMiddleware(delete.DeleteSeat))
 	http.HandleFunc("/delete_stock", CORSMiddleware(delete.DeleteStock))
 	http.HandleFunc("/delete_customer", CORSMiddleware(delete.DeleteCustomer))
-	http.HandleFunc("/delete_detail", CORSMiddleware(delete.DeleteDetail))
+	http.HandleFunc("/delete_order", CORSMiddleware(delete.DeleteOrder))
+	http.HandleFunc("/delete_order_detail", CORSMiddleware(delete.DeleteOrderDetail))
 
 	// サーバの起動
 	fmt.Println("[Start APIServer]")

@@ -9,17 +9,17 @@ import (
 	"strconv"
 )
 
-type DeleteCustomerResponseSuccess struct {
-	Message string           `json:"message"`
-	Deleted db.CustomerModel `json:"deleted"`
+type DeleteProductResponseSuccess struct {
+	Message string          `json:"message"`
+	Deleted db.ProductModel `json:"deleted"`
 }
 
-func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
+func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	var (
 		status  int    = http.StatusNotImplemented
 		message string = "メッセージがありません"
 		err     error
-		deleted db.CustomerModel
+		deleted db.ProductModel
 	)
 
 	// 処理終了後のレスポンス処理
@@ -31,7 +31,7 @@ func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 
 		// 処理成功時
 		if status == http.StatusOK {
-			res := new(DeleteCustomerResponseSuccess)
+			res := new(DeleteProductResponseSuccess)
 
 			// レスポンスボディの作成
 			res.Message = message
@@ -58,7 +58,7 @@ func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Printf("[Delete Customer][%d] %s\n", status, message)
+		fmt.Printf("[Delete Product][%d] %s\n", status, message)
 
 	}()
 
@@ -88,19 +88,12 @@ func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	// Delete
-	d, err := client.Customer.FindUnique(
-		db.Customer.ID.Equals(id),
-	).With(
-		db.Customer.Order.Fetch().With(
-			db.Order.PaymentState.Fetch(),
-			db.Order.ReservationCancel.Fetch(),
-			db.Order.ReservationEnd.Fetch(),
-			db.Order.OrderDetail.Fetch(),
-		),
-	).Delete().Exec(ctx)
+	d, err := client.Product.FindUnique(
+		db.Product.ID.Equals(id),
+	).With().Delete().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("Customer削除エラー : ", err)
+		message = fmt.Sprint("Product削除エラー : ", err)
 		return
 	}
 

@@ -32,7 +32,7 @@ model ProductGroup {
   max_time Int?
   interval Int?
 
-  shop Shop @relation(fields: [shop_id], references: [id])
+  shop Shop @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   product Product[]
 
   @@unique([shop_id, name])
@@ -48,7 +48,7 @@ model Product {
   remark String?
   img_data String?
 
-  group ProductGroup @relation(fields: [group_id], references: [id])
+  group ProductGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
   price Price[]
   seat Seat[]
 
@@ -64,7 +64,7 @@ model Price {
   tax Int
   remark String?
 
-  product Product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
   stock Stock[]
 
   @@unique([product_id, name])
@@ -79,7 +79,7 @@ model Seat {
   is_enable Boolean @default(false)
   remark String?
 
-  product Product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
   order_detail OrderDetail[]
   reserved_seat SeatReservation[]
 
@@ -97,7 +97,7 @@ model Stock {
   end_at DateTime? @db.Timestamptz(0)
   is_enable Boolean @default(false)
 
-  price Price @relation(fields: [price_id], references: [id])
+  price Price @relation(fields: [price_id], references: [id], onDelete: Cascade)
   order_detail OrderDetail[]
   reserved_seat SeatReservation[]
 
@@ -111,8 +111,8 @@ model SeatReservation {
   seat_id Int
   is_reserved Boolean @default(false)
 
-  stock Stock @relation(fields: [stock_id], references: [id])
-  seat Seat @relation(fields: [seat_id], references: [id])
+  stock Stock @relation(fields: [stock_id], references: [id], onDelete: Cascade)
+  seat Seat @relation(fields: [seat_id], references: [id], onDelete: Cascade)
 
   @@unique([stock_id, seat_id])
 }
@@ -141,7 +141,7 @@ model Order {
   created_at DateTime @db.Timestamptz(3) @default(now())
   remark String?
 
-  customer Customer @relation(fields: [customer_id], references: [id])
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   payment_state PaymentState[]
   reservation_cancel ReservationCancel?
   reservation_end ReservationEnd?
@@ -156,9 +156,9 @@ model OrderDetail {
   number_people Int?
   qty Int?
 
-  order Order @relation(fields: [order_id], references: [id])
-  stock Stock @relation(fields: [stock_id], references: [id])
-  seat Seat? @relation(fields: [seat_id], references: [id])
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  stock Stock @relation(fields: [stock_id], references: [id], onDelete: Cascade)
+  seat Seat? @relation(fields: [seat_id], references: [id], onDelete: Cascade)
 }
 
 // PaymentState(決済状態)テーブル
@@ -169,7 +169,7 @@ model PaymentState {
   message String
   created_at DateTime @db.Timestamptz(3) @default(now())
 
-  order Order @relation(fields: [order_id], references: [id])
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
 }
 
 // ReservationCancel(予約キャンセル)テーブル
@@ -179,7 +179,7 @@ model ReservationCancel {
   is_accepted Boolean
   created_at DateTime @db.Timestamptz(3) @default(now())
 
-  order Order @relation(fields: [order_id], references: [id])
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
 }
 
 // ReservationEnd(予約終了)テーブル
@@ -189,7 +189,7 @@ model ReservationEnd {
   is_accepted Boolean
   created_at DateTime @db.Timestamptz(3) @default(now())
 
-  order Order @relation(fields: [order_id], references: [id])
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
 }
 
 // EditInfo(テーブル編集履歴)テーブル

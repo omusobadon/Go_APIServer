@@ -6,27 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
-type DeleteDetailRequest struct {
-	ID    *int `json:"id"`
-	Order *int `json:"order_id"`
-	Stock *int `json:"stock_id"`
-	Seat  *int `json:"seat_id"`
+type DeleteOrderDetailResponseSuccess struct {
+	Message string              `json:"message"`
+	Deleted db.OrderDetailModel `json:"deleted"`
 }
 
-type DeleteDetailResponse struct {
-	Message    string                `json:"message"`
-	Request    DeleteDetailRequest   `json:"request"`
-	Registered []db.OrderDetailModel `json:"registered"`
-}
-
-func DeleteDetail(w http.ResponseWriter, r *http.Request) {
+func DeleteOrderDetail(w http.ResponseWriter, r *http.Request) {
 	var (
 		status  int    = http.StatusNotImplemented
 		message string = "メッセージがありません"
-		req     DeleteDetailRequest
-		detail  []db.OrderDetailModel
+		err     error
+		deleted db.OrderDetailModel
 	)
 
 	// 処理終了後のレスポンス処理
@@ -36,14 +29,13 @@ func DeleteDetail(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
 
-		// 注文成功時
+		// 処理成功時
 		if status == http.StatusOK {
-			res := new(DeleteDetailResponse)
+			res := new(DeleteOrderDetailResponseSuccess)
 
 			// レスポンスボディの作成
 			res.Message = message
-			res.Request = req
-			res.Registered = detail
+			res.Deleted = deleted
 
 			// レスポンス構造体をJSONに変換して送信
 			if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -53,11 +45,10 @@ func DeleteDetail(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
-			res := new(DeleteDetailResponse)
+			res := new(DeleteResponseFailure)
 
 			// レスポンスボディの作成
 			res.Message = message
-			res.Request = req
 
 			// レスポンス構造体をJSONに変換して送信
 			if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -67,23 +58,18 @@ func DeleteDetail(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		fmt.Printf("[Delete Detail][%d] %s\n", status, message)
+		fmt.Printf("[Delete OrderDetail][%d] %s\n", status, message)
 
 	}()
 
-	// 注文情報をデコード
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// リクエストパラメータの取得
+	id_str := r.FormValue("id")
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("POSTデコードエラー : ", err)
+		message = "不正なパラメータ"
 		return
 	}
-
-	// リクエストの中身が存在するか確認
-	// if req.ID == nil {
-	// 	status = http.StatusBadRequest
-	// 	message = "id is null"
-	// 	return
-	// }
 
 	// データベース接続用クライアントの作成
 	client := db.NewClient()
@@ -101,22 +87,17 @@ func DeleteDetail(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// 顧客情報の削除
-	deleted, err := client.OrderDetail.FindMany(
-		db.OrderDetail.Or(
-			db.OrderDetail.ID.EqualsIfPresent(req.ID),
-			db.OrderDetail.OrderID.EqualsIfPresent(req.Order),
-			db.OrderDetail.StockID.EqualsIfPresent(req.Stock),
-		),
-	).Delete().Exec(ctx)
+	// Delete
+	d, err := client.OrderDetail.FindUnique(
+		db.OrderDetail.ID.Equals(id),
+	).With().Delete().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest
-		message = fmt.Sprint("OrderDetailテーブル削除エラー : ", err)
+		message = fmt.Sprint("Seat削除エラー : ", err)
 		return
 	}
 
-	fmt.Println(deleted)
-	// detail = deleted
+	deleted = *d
 
 	status = http.StatusOK
 	message = "正常終了"
