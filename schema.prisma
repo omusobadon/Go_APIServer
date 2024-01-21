@@ -43,7 +43,7 @@ model Product {
   id Int @id @default(autoincrement())
   group_id Int
   name String
-  max_people Int? @default(0)
+  max_people Int?
   qty Int?
   remark String?
   img_data String?
