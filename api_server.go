@@ -86,6 +86,8 @@ func APIServer() error {
 	http.HandleFunc("/delete_order", CORSMiddleware(delete.DeleteOrder))
 	http.HandleFunc("/delete_order_detail", CORSMiddleware(delete.DeleteOrderDetail))
 
+	http.HandleFunc("/test", CORSMiddleware(Test))
+
 	// サーバの起動
 	fmt.Println("[Start APIServer]")
 	server.ListenAndServe()

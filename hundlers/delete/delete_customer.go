@@ -90,13 +90,6 @@ func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	// Delete
 	d, err := client.Customer.FindUnique(
 		db.Customer.ID.Equals(id),
-	).With(
-		db.Customer.Order.Fetch().With(
-			db.Order.PaymentState.Fetch(),
-			db.Order.ReservationCancel.Fetch(),
-			db.Order.ReservationEnd.Fetch(),
-			db.Order.OrderDetail.Fetch(),
-		),
 	).Delete().Exec(ctx)
 	if err != nil {
 		status = http.StatusBadRequest

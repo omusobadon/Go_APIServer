@@ -83,12 +83,20 @@ func GetOrder(w http.ResponseWriter, r *http.Request) {
 	// "0"以外のときはパラメータで指定した情報を取得
 	if customer_id == 0 {
 		order, err = client.Order.FindMany().With(
+			db.Order.PaymentState.Fetch(),
+			db.Order.ReservationCancel.Fetch(),
+			db.Order.ReservationEnd.Fetch(),
 			db.Order.OrderDetail.Fetch(),
 		).Exec(ctx)
 
 	} else {
 		order, err = client.Order.FindMany(
 			db.Order.CustomerID.Equals(customer_id),
+		).With(
+			db.Order.PaymentState.Fetch(),
+			db.Order.ReservationCancel.Fetch(),
+			db.Order.ReservationEnd.Fetch(),
+			db.Order.OrderDetail.Fetch(),
 		).Exec(ctx)
 	}
 	if err != nil {

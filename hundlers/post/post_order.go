@@ -446,19 +446,35 @@ func PostOrder(w http.ResponseWriter, r *http.Request) {
 
 	// OrderDetailテーブルに注文情報をインサート
 	for _, v := range *req.Detail {
-		d, err := client.OrderDetail.CreateOne(
-			db.OrderDetail.Order.Link(
-				db.Order.ID.Equals(order.ID),
-			),
-			db.OrderDetail.Stock.Link(
-				db.Stock.ID.Equals(*v.Stock),
-			),
-			db.OrderDetail.Seat.Link(
-				db.Seat.ID.EqualsIfPresent(v.Seat),
-			),
-			db.OrderDetail.NumberPeople.SetIfPresent(v.People),
-			db.OrderDetail.Qty.SetIfPresent(v.Qty),
-		).Exec(ctx)
+
+		var d *db.OrderDetailModel
+		if options.Seat_enable {
+			d, err = client.OrderDetail.CreateOne(
+				db.OrderDetail.Order.Link(
+					db.Order.ID.Equals(order.ID),
+				),
+				db.OrderDetail.Stock.Link(
+					db.Stock.ID.Equals(*v.Stock),
+				),
+				db.OrderDetail.Seat.Link(
+					db.Seat.ID.EqualsIfPresent(v.Seat),
+				),
+				db.OrderDetail.NumberPeople.SetIfPresent(v.People),
+				db.OrderDetail.Qty.SetIfPresent(v.Qty),
+			).Exec(ctx)
+
+		} else {
+			d, err = client.OrderDetail.CreateOne(
+				db.OrderDetail.Order.Link(
+					db.Order.ID.Equals(order.ID),
+				),
+				db.OrderDetail.Stock.Link(
+					db.Stock.ID.Equals(*v.Stock),
+				),
+				db.OrderDetail.NumberPeople.SetIfPresent(v.People),
+				db.OrderDetail.Qty.SetIfPresent(v.Qty),
+			).Exec(ctx)
+		}
 		if err != nil {
 			status = http.StatusBadRequest
 			message = fmt.Sprint("注文詳細テーブルインサートエラー : ", err)

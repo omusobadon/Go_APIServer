@@ -88,12 +88,12 @@ func GetManage(w http.ResponseWriter, r *http.Request) {
 	).With(
 		db.ProductGroup.Product.Fetch().With(
 			db.Product.Price.Fetch().With(
-				db.Price.Stock.Fetch().With(
-					db.Stock.OrderDetail.Fetch(),
-				),
+				db.Price.Stock.Fetch(),
 			),
 		).With(
-			db.Product.Seat.Fetch(),
+			db.Product.Seat.Fetch().With(
+				db.Seat.ReservedSeat.Fetch(),
+			),
 		),
 	).Exec(ctx)
 	if err != nil {
@@ -105,11 +105,8 @@ func GetManage(w http.ResponseWriter, r *http.Request) {
 	customers, err = client.Customer.FindMany().With(
 		db.Customer.Order.Fetch().With(
 			db.Order.PaymentState.Fetch(),
-		).With(
 			db.Order.ReservationCancel.Fetch(),
-		).With(
 			db.Order.ReservationEnd.Fetch(),
-		).With(
 			db.Order.OrderDetail.Fetch(),
 		),
 	).Exec(ctx)
