@@ -20,14 +20,16 @@ const (
 	seat_name    string = "test"
 	stock_name   string = "time"
 
-	// 自動生成する数。テーブルに1行でも情報がある場合は生成されない。
-	shop_num    int = 1 // 店舗
-	group_num   int = 1 // 商品グループ
-	product_num int = 3 // 商品
-	price_num   int = 1 // 価格
-	seat_row    int = 3 // 座席（行）
-	seat_column int = 5 // 座席（列）
-	stock_num   int = 3 // 在庫
+	// 自動生成する数。テーブルに1行でも情報がある場合は生成されない
+	shop_num     int = 1 // 店舗
+	group_num    int = 1 // 商品グループ
+	product_num  int = 3 // 商品
+	price_num    int = 1 // 価格
+	seat_row     int = 3 // 座席（行）
+	seat_column  int = 5 // 座席（列）
+	stock_num    int = 3 // 在庫
+	customer_num int = 3
+	order_num    int = 3
 )
 
 func AutoInsert() error {
@@ -335,6 +337,223 @@ func AutoInsert() error {
 	}
 
 	fmt.Printf("在庫が%d件見つかりました。\n", len(stock))
+
+	customer, err := client.Customer.FindMany().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("CustomerGetErr : %w", err)
+	}
+
+	if len(customer) == 0 {
+		fmt.Printf("顧客テーブルにインサート(%d件)...", customer_num)
+
+		for i := 0; i < customer_num; i++ {
+			_, err := client.Customer.CreateOne(
+				db.Customer.Name.Set(fmt.Sprint("Customer", i+1)),
+				db.Customer.Mail.Set(fmt.Sprintf("customer%d@domain.jp", i+1)),
+				db.Customer.Phone.Set("test"),
+				db.Customer.Address.Set(fmt.Sprint("Customer Address", i+1)),
+				db.Customer.PaymentInfo.Set("Pay"),
+			).Exec(ctx)
+			if err != nil {
+				fmt.Println("エラー")
+				return fmt.Errorf("CustomerInsertErr : %w", err)
+			}
+		}
+		fmt.Println("完了")
+
+		// 在庫テーブルの取得
+		customer, err = client.Customer.FindMany().Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("CustomerGetErr : %w", err)
+		}
+	}
+
+	fmt.Printf("顧客が%d件見つかりました。\n", len(customer))
+
+	order, err := client.Order.FindMany().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("CustomerGetErr : %w", err)
+	}
+
+	if len(order) == 0 {
+		fmt.Printf("注文テーブルにインサート(%d件)...", len(customer)*order_num)
+
+		// 現在時刻の取得
+		now := time.Now()
+
+		// 開始・終了時刻生成用の基準時間
+		time_generated := time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			now.Hour()+1,
+			0, 0, 0, time.Local,
+		)
+
+		for _, i := range customer {
+			for j := 0; j < order_num; j++ {
+
+				// 開始時刻の生成
+				s := rand.Intn(10) + 1
+				start := time_generated.Add(time.Duration(s) * time.Hour)
+
+				// 終了時刻の生成
+				e := s + rand.Intn(10) + 1
+				end := time_generated.Add(time.Duration(e) * time.Hour)
+
+				_, err = client.Order.CreateOne(
+					db.Order.IsAccepted.Set(true),
+					db.Order.IsPending.Set(false),
+					db.Order.Customer.Link(
+						db.Customer.ID.Equals(i.ID),
+					),
+					db.Order.StartAt.Set(start),
+					db.Order.EndAt.Set(end),
+				).Exec(ctx)
+				if err != nil {
+					fmt.Println("エラー")
+					return fmt.Errorf("OrderInsertErr : %w", err)
+				}
+			}
+		}
+		fmt.Println("完了")
+
+		// 注文テーブルの取得
+		order, err = client.Order.FindMany().Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("OrderGetErr : %w", err)
+		}
+	}
+
+	fmt.Printf("注文が%d件見つかりました。\n", len(order))
+
+	payment, err := client.PaymentState.FindMany().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("PaymentGetErr : %w", err)
+	}
+
+	if len(payment) == 0 {
+		fmt.Printf("決済ステータステーブルにインサート(%d件)...", len(order))
+
+		for _, o := range order {
+			_, err := client.PaymentState.CreateOne(
+				db.PaymentState.IsAccepted.Set(true),
+				db.PaymentState.Message.Set("承認"),
+				db.PaymentState.Order.Link(
+					db.Order.ID.Equals(o.ID),
+				),
+			).Exec(ctx)
+			if err != nil {
+				fmt.Println("エラー")
+				return fmt.Errorf("PaymentStateInsertErr : %w", err)
+			}
+		}
+		fmt.Println("完了")
+
+		payment, err = client.PaymentState.FindMany().Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("PaymentStateGetErr : %w", err)
+		}
+	}
+
+	fmt.Printf("決済ステータスが%d件見つかりました。\n", len(payment))
+
+	cancel, err := client.ReservationCancel.FindMany().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("CancelGetErr : %w", err)
+	}
+
+	if len(cancel) == 0 {
+		fmt.Printf("キャンセルテーブルにインサート(%d件)...", len(order))
+
+		for _, o := range order {
+			_, err := client.ReservationCancel.CreateOne(
+				db.ReservationCancel.IsAccepted.Set(true),
+				db.ReservationCancel.Order.Link(
+					db.Order.ID.Equals(o.ID),
+				),
+			).Exec(ctx)
+			if err != nil {
+				fmt.Println("エラー")
+				return fmt.Errorf("PaymentStateInsertErr : %w", err)
+			}
+		}
+		fmt.Println("完了")
+
+		cancel, err = client.ReservationCancel.FindMany().Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("CancelStateGetErr : %w", err)
+		}
+	}
+
+	fmt.Printf("キャンセル情報が%d件見つかりました。\n", len(cancel))
+
+	end, err := client.ReservationEnd.FindMany().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("EndGetErr : %w", err)
+	}
+
+	if len(end) == 0 {
+		fmt.Printf("終了テーブルにインサート(%d件)...", len(order))
+
+		for _, o := range order {
+			_, err := client.ReservationEnd.CreateOne(
+				db.ReservationEnd.IsAccepted.Set(true),
+				db.ReservationEnd.Order.Link(
+					db.Order.ID.Equals(o.ID),
+				),
+			).Exec(ctx)
+			if err != nil {
+				fmt.Println("エラー")
+				return fmt.Errorf("EndInsertErr : %w", err)
+			}
+		}
+		fmt.Println("完了")
+
+		end, err = client.ReservationEnd.FindMany().Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("EndGetErr : %w", err)
+		}
+	}
+
+	fmt.Printf("終了情報が%d件見つかりました。\n", len(end))
+
+	detail, err := client.OrderDetail.FindMany().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("DetailGetErr : %w", err)
+	}
+
+	if len(detail) == 0 {
+		fmt.Printf("注文詳細テーブルにインサート(%d件)...", len(order))
+
+		for _, o := range order {
+			_, err := client.OrderDetail.CreateOne(
+				db.OrderDetail.Order.Link(
+					db.Order.ID.Equals(o.ID),
+				),
+				db.OrderDetail.Stock.Link(
+					db.Stock.ID.Equals(stock[0].ID),
+				),
+				db.OrderDetail.Seat.Link(
+					db.Seat.ID.EqualsIfPresent(&seat[0].ID),
+				),
+				db.OrderDetail.NumberPeople.Set(1),
+				db.OrderDetail.Qty.Set(1),
+			).Exec(ctx)
+			if err != nil {
+				fmt.Println("エラー")
+				return fmt.Errorf("EndInsertErr : %w", err)
+			}
+		}
+		fmt.Println("完了")
+
+		detail, err = client.OrderDetail.FindMany().Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("DetailGetErr : %w", err)
+		}
+	}
+
+	fmt.Printf("注文詳細情報が%d件見つかりました。\n", len(detail))
 
 	return nil
 }

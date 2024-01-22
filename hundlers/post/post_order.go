@@ -46,6 +46,9 @@ var options ini.LoadedOptions = ini.Options
 var post_order_cnt int // PostOrderのカウント用
 
 func PostOrder(w http.ResponseWriter, r *http.Request) {
+	// body := http.MaxBytesReader(w, r, 10)
+	// fmt.Println(body)
+
 	post_order_cnt++
 	var (
 		status  int    = http.StatusNotImplemented
