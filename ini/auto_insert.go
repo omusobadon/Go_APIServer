@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	seat_is bool = false // 座席を生成するか
+	// seat_is bool = false // 座席を生成するか
 
 	// 自動生成で使用される名前
 	shop_name    string = "Car Shop"
@@ -232,7 +232,7 @@ func AutoInsert() error {
 		return fmt.Errorf("SeatGetErr : %w", err)
 	}
 
-	if len(seat) == 0 && seat_is {
+	if len(seat) == 0 && Options.Seat_enable {
 		fmt.Printf("座席テーブルにインサート(%d件)...", len(product)*seat_row*seat_column)
 		alphabets := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -526,23 +526,42 @@ func AutoInsert() error {
 	if len(detail) == 0 {
 		fmt.Printf("注文詳細テーブルにインサート(%d件)...", len(order))
 
-		for _, o := range order {
-			_, err := client.OrderDetail.CreateOne(
-				db.OrderDetail.Order.Link(
-					db.Order.ID.Equals(o.ID),
-				),
-				db.OrderDetail.Stock.Link(
-					db.Stock.ID.Equals(stock[0].ID),
-				),
-				db.OrderDetail.Seat.Link(
-					db.Seat.ID.EqualsIfPresent(&seat[0].ID),
-				),
-				db.OrderDetail.NumberPeople.Set(1),
-				db.OrderDetail.Qty.Set(1),
-			).Exec(ctx)
-			if err != nil {
-				fmt.Println("エラー")
-				return fmt.Errorf("EndInsertErr : %w", err)
+		if Options.Seat_enable {
+			for _, o := range order {
+				_, err := client.OrderDetail.CreateOne(
+					db.OrderDetail.Order.Link(
+						db.Order.ID.Equals(o.ID),
+					),
+					db.OrderDetail.Stock.Link(
+						db.Stock.ID.Equals(stock[0].ID),
+					),
+					db.OrderDetail.Seat.Link(
+						db.Seat.ID.Equals(seat[0].ID),
+					),
+					db.OrderDetail.NumberPeople.Set(1),
+				).Exec(ctx)
+				if err != nil {
+					fmt.Println("エラー")
+					return fmt.Errorf("EndInsertErr : %w", err)
+				}
+			}
+
+		} else {
+			for _, o := range order {
+				_, err := client.OrderDetail.CreateOne(
+					db.OrderDetail.Order.Link(
+						db.Order.ID.Equals(o.ID),
+					),
+					db.OrderDetail.Stock.Link(
+						db.Stock.ID.Equals(stock[0].ID),
+					),
+					db.OrderDetail.NumberPeople.Set(1),
+					db.OrderDetail.Qty.Set(1),
+				).Exec(ctx)
+				if err != nil {
+					fmt.Println("エラー")
+					return fmt.Errorf("EndInsertErr : %w", err)
+				}
 			}
 		}
 		fmt.Println("完了")
