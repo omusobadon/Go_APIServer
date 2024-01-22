@@ -7,7 +7,7 @@ import (
 )
 
 // 商品・在庫テーブルが空の場合、自動生成するかどうか（テスト用）
-const auto_insert bool = true
+const auto_insert bool = false
 
 // SeatReservationの自動生成
 func generateSeatReservation() error {
